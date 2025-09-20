@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Results — PurpleFlights</title>
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;margin:0;background:#f7f7fb;color:#191a1f}
+    .container{max-width:960px;margin:0 auto;padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 6px 12px rgba(0,0,0,.05)}
+    .tag{display:inline-block;background:#eef2ff;border:1px solid #e0e7ff;color:#3730a3;font-size:12px;padding:2px 8px;border-radius:999px}
+    .btn{display:inline-block;padding:10px 14px;border-radius:999px;border:1px solid #e5e7eb;text-decoration:none;color:#fff;background:#1f2937}
+    .muted{color:#6b7280} .small{font-size:12px}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Results</h1>
+    <div id="meta" class="muted small"></div>
+    <div id="results" class="grid"></div>
+  </main>
+
+  <script>
+    const qs = new URLSearchParams(location.search);
+    const req = {
+      from: (qs.get('from')||'').toUpperCase(),
+      to: (qs.get('to')||'').toUpperCase(),
+      date: qs.get('date')||'',
+      ret: qs.get('ret')||'',
+      adults: +(qs.get('adults')||1),
+      cabin: qs.get('cabin')||'ECONOMY'
+    };
+    document.getElementById('meta').textContent = `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
+
+    const resEl = document.getElementById('results');
+    resEl.innerHTML = '<div class="card">Searching…</div>';
+
+    fetch('/api/search', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ from: req.from, to: req.to, date: req.date, ret: req.ret })
+    })
+    .then(r => r.json())
+    .then(data => {
+      const offers = Array.isArray(data?.data) ? data.data : [];
+      if (!offers.length) { resEl.innerHTML = '<div class="card">No results.</div>'; return; }
+      resEl.innerHTML = '';
+      offers.slice(0, 30).forEach(o => {
+        const price = o.price;
+        const currency = o.currency || 'USD';
+        const dep = o.origin || req.from;
+        const arr = o.destination || req.to;
+        const airline = (o.airline || '').toUpperCase() || '—';
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `
+          <div class="row">
+            <span class="tag">${airline}</span>
+            <strong style="margin-left:8px">${dep} → ${arr}</strong>
+          </div>
+          <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
+          <a class="btn" target="_blank" rel="noopener">Book — ${price} ${currency}</a>
+        `;
+        // Build /api/book link (opens new tab)
+        const a = card.querySelector('a');
+        const q2 = new URLSearchParams({ from: dep, to: arr, date: req.date, return: req.ret });
+        a.href = '/api/book?' + q2.toString();
+        a.addEventListener('click', async (ev) => {
+          // Replace href with deep link from API, then follow; keeps your page open
+          ev.preventDefault();
+          try {
+            const r = await fetch('/api/book?' + q2.toString());
+            const j = await r.json();
+            if (j.ok && j.url) window.open(j.url, '_blank', 'noopener');
+          } catch {}
+        });
+        resEl.appendChild(card);
+      });
+    })
+    .catch(e => { resEl.innerHTML = '<div class="card">Search failed.</div>'; });
+  </script>
+</body>
+</html>
