@@ -35,26 +35,29 @@
     </form>
   </main>
 
-  <script type="module">
-    import { attachAutocomplete } from '/js/lib/autocomplete.js';
-    const from = document.getElementById('from');
-    const to = document.getElementById('to');
-    attachAutocomplete(from);
-    attachAutocomplete(to);
+<script type="module">
+  import { attachAutocomplete } from '/js/lib/autocomplete.js';
+  const from = document.getElementById('from');
+  const to = document.getElementById('to');
+  attachAutocomplete(from);
+  attachAutocomplete(to);
 
-    document.getElementById('search').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const data = {
-        from: from.dataset.code || '',
-        to: to.dataset.code || '',
-        date: document.getElementById('date').value || '',
-        ret: document.getElementById('ret').value || '',
-        adults: document.getElementById('adults').value || '1',
-        cabin: document.getElementById('cabin').value || 'ECONOMY',
-      };
-      if (!data.from || !data.to || !data.date) { alert('Fill From, To, and Depart.'); return; }
-      alert(`Great!\nFrom: ${data.from}\nTo: ${data.to}\nDepart: ${data.date}\nReturn: ${data.ret || '(one-way)'}\nAdults: ${data.adults}\nCabin: ${data.cabin}`);
-    });
-  </script>
-</body>
-</html>
+  document.getElementById('search').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = {
+      from: from.dataset.code || '',
+      to: to.dataset.code || '',
+      date: document.getElementById('date').value || '',
+      ret: document.getElementById('ret').value || '',
+      adults: document.getElementById('adults').value || '1',
+      cabin: document.getElementById('cabin').value || 'ECONOMY',
+    };
+    if (!data.from || !data.to || !data.date) {
+      alert('Fill From, To, and Depart.');
+      return;
+    }
+    const qs = new URLSearchParams(data);
+    // NOTE: include the "?" and open in a new tab
+    window.open('/flights/results.html?' + qs.toString(), '_blank', 'noopener');
+  });
+</script>
