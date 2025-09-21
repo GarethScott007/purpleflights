@@ -6,20 +6,17 @@ export const onRequestGet = async ({ request }) => {
   const q = (url.searchParams.get('q') || '').trim();
   if (!q) return new Response(JSON.stringify([]), { headers: JH });
 
-  // Travelpayouts autocomplete (no key required)
   const api = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(q)}&locale=en&types[]=city&types[]=airport&types[]=country`;
   const r = await fetch(api, { cf: { cacheTtl: 300, cacheEverything: true } });
   if (!r.ok) return new Response(JSON.stringify([]), { headers: JH });
 
   const list = await r.json();
-  const data = (Array.isArray(list) ? list : [])
-    .map(x => ({
-      code: x.code || x.iata_code || x.iata || '',
-      name: x.name || x.city_name || x.city || x.country_name || '',
-      country: x.country_name || x.country || '',
-    }))
-    .filter(x => x.code && x.name)
-    .slice(0, 20);
-
-  return new Response(JSON.stringify(data), { headers: JH });
+  const data = (Array.isArray(list) ? list : []).map(x => ({
+    code: x.code || x.iata_code || x.iata || '',      // city or airport code
+    name: x.name || x.city_name || x.city || x.country_name || '',
+    country: x.country_name || x.country || '',
+    type: x.type || '',                                // 'city' | 'airport' | 'country'
+    city_code: x.city_code || (x.type === 'city' ? (x.code || '') : ''), // city IATA if known
+  })).filter(x => x.code && x.name);
+  return new Response(JSON.stringify(data.slice(0, 20)), { headers: JH });
 };
