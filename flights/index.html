@@ -51,16 +51,37 @@
   attachAutocomplete(toEl);
 
   document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
+
+  function pickCode(input) {
+    // Prefer dataset.city (LON) then dataset.code (LHR)
+    const a = (input.dataset.city || '').toUpperCase();
+    const b = (input.dataset.code || '').toUpperCase();
+    if (/^[A-Z]{3}$/.test(a)) return a;
+    if (/^[A-Z]{3}$/.test(b)) return b;
+
+    // Parse typed text like "London (LON)" or "BKK"
+    const v = (input.value || '').trim().toUpperCase();
+    const m = v.match(/\(([A-Z]{3})\)/);
+    if (m) return m[1];
+    const t = v.replace(/[^A-Z]/g,'');
+    return /^[A-Z]{3}$/.test(t) ? t : '';
+  }
+
   document.getElementById('go').addEventListener('click', () => {
     const data = {
-      from: (fromEl.dataset.city || fromEl.dataset.code || '').toUpperCase(),
-      to:   (toEl.dataset.city   || toEl.dataset.code   || '').toUpperCase(),
+      from: pickCode(fromEl),
+      to:   pickCode(toEl),
       date: document.getElementById('date').value || '',
       ret:  document.getElementById('ret').value  || '',
       adults: document.getElementById('adults').value || '1',
-      cabin: document.getElementById('cabin').value || 'ECONOMY',
+      cabin:  document.getElementById('cabin').value  || 'ECONOMY',
     };
-    if (!data.from || !data.to || !data.date) { alert('Fill From, To, and Depart.'); return; }
+
+    if (!data.from || !data.to || !data.date) {
+      alert('Fill From, To, and Depart (pick from the dropdown so the code is 3 letters).');
+      return;
+    }
     window.open('/flights/results.html?' + new URLSearchParams(data).toString(), '_blank', 'noopener');
   });
 </script>
+
