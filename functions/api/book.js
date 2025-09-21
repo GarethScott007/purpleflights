@@ -7,9 +7,8 @@ const JH = {
 export const onRequestGet = async ({ request, env }) => {
   const u = new URL(request.url);
 
-  // provider: kiwi | aviasales (default from env if missing)
-  const provider = (u.searchParams.get("p") || String(env.BOOK_PROVIDER || "kiwi"))
-    .toLowerCase();
+  // provider: kiwi | aviasales (default if p is missing)
+  const p = (u.searchParams.get("p") || String(env.BOOK_PROVIDER || "kiwi")).toLowerCase();
 
   const from = (u.searchParams.get("from") || "").toUpperCase();
   const to   = (u.searchParams.get("to") || "").toUpperCase();
@@ -17,32 +16,39 @@ export const onRequestGet = async ({ request, env }) => {
   const ret  = u.searchParams.get("return") || "";
   const adults = clamp(u.searchParams.get("adults"), 1, 9, 1);
   const currency = (u.searchParams.get("currency") || "USD").toUpperCase();
+  const redirect = u.searchParams.get("redirect") === "1"; // NEW
 
   // Validate
   if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to) || !date) {
     return json({ ok: false, error: "missing/invalid params" }, 400);
   }
 
-  if (provider === "aviasales") {
-    // Aviasales deep link
+  let url = "";
+
+  if (p === "aviasales") {
     const q = new URLSearchParams();
     q.set("origin_iata", from);
     q.set("destination_iata", to);
     q.set("depart_date", date);
     if (ret) q.set("return_date", ret);
     q.set("currency", currency);
-    if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID)); // your TP marker
-    return json({ ok: true, url: "https://www.aviasales.com/search?" + q.toString() });
+    if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID));
+    url = "https://www.aviasales.com/search?" + q.toString();
+  } else {
+    const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
+    const q = new URLSearchParams();
+    q.set("adults", String(adults));
+    q.set("cabin", "M");
+    q.set("currency", currency);
+    if (env.KIWI_AFFILIATE_ID) q.set("affilid", String(env.KIWI_AFFILIATE_ID));
+    url = `https://www.kiwi.com/en/search/results/${seg}?` + q.toString();
   }
 
-  // Default: Kiwi deep link
-  const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
-  const q = new URLSearchParams();
-  q.set("adults", String(adults));
-  q.set("cabin", "M"); // economy
-  q.set("currency", currency);
-  if (env.KIWI_AFFILIATE_ID) q.set("affilid", String(env.KIWI_AFFILIATE_ID)); // your Kiwi/TP affil id
-  return json({ ok: true, url: `https://www.kiwi.com/en/search/results/${seg}?` + q.toString() });
+  // NEW: redirect mode for plain <a href> links
+  if (redirect) {
+    return Response.redirect(url, 302);
+  }
+  return json({ ok: true, url });
 };
 
 function clamp(v, min, max, def) {
