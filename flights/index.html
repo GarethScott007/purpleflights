@@ -20,7 +20,7 @@
     <h1>Flights</h1>
     <form id="search" class="card grid">
       <div><label>From</label><input id="from" placeholder="Bangkok (BKK)" /></div>
-      <div><label>To</label><input id="to" placeholder="Tokyo (NRT)" /></div>
+      <div><label>To</label><input id="to" placeholder="London (LON)" /></div>
       <div><label>Depart</label><input id="date" type="date" /></div>
       <div><label>Return</label><input id="ret" type="date" /></div>
       <div><label>Cabin</label>
@@ -32,56 +32,47 @@
         </select>
       </div>
       <div><label>Adults</label><input id="adults" type="number" min="1" max="9" value="1" /></div>
-      <div style="align-self:end"><button class="btn" type="submit">Test selection</button></div>
+      <div style="align-self:end"><button id="go" class="btn" type="button">Test selection</button></div>
     </form>
   </main>
 
-  <!-- Keep this single module script at the very end so the form exists -->
-  <!-- change the button in the form -->
-<!-- find the button and make sure it looks exactly like this -->
-<div style="align-self:end">
-  <button id="go" class="btn" type="button">Test selection</button>
-</div>
+  <script type="module">
+    import { attachAutocomplete } from '/js/lib/autocomplete.js';
+    const fromEl = document.getElementById('from');
+    const toEl   = document.getElementById('to');
+    attachAutocomplete(fromEl);
+    attachAutocomplete(toEl);
 
-<script type="module">
-  import { attachAutocomplete } from '/js/lib/autocomplete.js';
-  const fromEl = document.getElementById('from');
-  const toEl   = document.getElementById('to');
-  attachAutocomplete(fromEl);
-  attachAutocomplete(toEl);
+    // stop any accidental form submit
+    document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
 
-  document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
-
-  function pickCode(input) {
-    // Prefer dataset.city (LON) then dataset.code (LHR)
-    const a = (input.dataset.city || '').toUpperCase();
-    const b = (input.dataset.code || '').toUpperCase();
-    if (/^[A-Z]{3}$/.test(a)) return a;
-    if (/^[A-Z]{3}$/.test(b)) return b;
-
-    // Parse typed text like "London (LON)" or "BKK"
-    const v = (input.value || '').trim().toUpperCase();
-    const m = v.match(/\(([A-Z]{3})\)/);
-    if (m) return m[1];
-    const t = v.replace(/[^A-Z]/g,'');
-    return /^[A-Z]{3}$/.test(t) ? t : '';
-  }
-
-  document.getElementById('go').addEventListener('click', () => {
-    const data = {
-      from: pickCode(fromEl),
-      to:   pickCode(toEl),
-      date: document.getElementById('date').value || '',
-      ret:  document.getElementById('ret').value  || '',
-      adults: document.getElementById('adults').value || '1',
-      cabin:  document.getElementById('cabin').value  || 'ECONOMY',
-    };
-
-    if (!data.from || !data.to || !data.date) {
-      alert('Fill From, To, and Depart (pick from the dropdown so the code is 3 letters).');
-      return;
+    // robust IATA picker: prefer dataset.city (LON), then dataset.code (LHR), then parse typed text
+    function pickCode(input) {
+      const a = (input.dataset.city || '').toUpperCase();
+      const b = (input.dataset.code || '').toUpperCase();
+      if (/^[A-Z]{3}$/.test(a)) return a;
+      if (/^[A-Z]{3}$/.test(b)) return b;
+      const v = (input.value || '').trim().toUpperCase();
+      const m = v.match(/\(([A-Z]{3})\)/); if (m) return m[1];
+      const t = v.replace(/[^A-Z]/g,''); return /^[A-Z]{3}$/.test(t) ? t : '';
     }
-    window.open('/flights/results.html?' + new URLSearchParams(data).toString(), '_blank', 'noopener');
-  });
-</script>
 
+    document.getElementById('go').addEventListener('click', () => {
+      const data = {
+        from: pickCode(fromEl),
+        to:   pickCode(toEl),
+        date: document.getElementById('date').value || '',
+        ret:  document.getElementById('ret').value  || '',
+        adults: document.getElementById('adults').value || '1',
+        cabin:  document.getElementById('cabin').value  || 'ECONOMY',
+      };
+      if (!data.from || !data.to || !data.date) {
+        alert('Fill From, To, and Depart (choose from dropdown so code is 3 letters).');
+        return;
+      }
+      const url = '/flights/results.html?' + new URLSearchParams(data).toString();
+      window.open(url, '_blank', 'noopener');
+    });
+  </script>
+</body>
+</html>
