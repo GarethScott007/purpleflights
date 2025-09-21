@@ -12,6 +12,7 @@
     label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
     input,select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff}
     .btn{display:inline-block;padding:10px 14px;border-radius:999px;border:1px solid #e5e7eb;text-decoration:none;color:#fff;background:#1f2937}
+    h1{font-size:44px;margin:24px 0;text-align:center}
   </style>
 </head>
 <body>
@@ -35,29 +36,36 @@
     </form>
   </main>
 
-<script type="module">
-  import { attachAutocomplete } from '/js/lib/autocomplete.js';
-  const from = document.getElementById('from');
-  const to = document.getElementById('to');
-  attachAutocomplete(from);
-  attachAutocomplete(to);
+  <!-- Keep this single module script at the very end so the form exists -->
+  <script type="module">
+    import { attachAutocomplete } from '/js/lib/autocomplete.js';
 
-  document.getElementById('search').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = {
-      from: from.dataset.code || '',
-      to: to.dataset.code || '',
-      date: document.getElementById('date').value || '',
-      ret: document.getElementById('ret').value || '',
-      adults: document.getElementById('adults').value || '1',
-      cabin: document.getElementById('cabin').value || 'ECONOMY',
-    };
-    if (!data.from || !data.to || !data.date) {
-      alert('Fill From, To, and Depart.');
-      return;
-    }
-    const qs = new URLSearchParams(data);
-    // NOTE: include the "?" and open in a new tab
-    window.open('/flights/results.html?' + qs.toString(), '_blank', 'noopener');
-  });
-</script>
+    const fromEl = document.getElementById('from');
+    const toEl   = document.getElementById('to');
+    attachAutocomplete(fromEl);
+    attachAutocomplete(toEl);
+
+    document.getElementById('search').addEventListener('submit', (e) => {
+      e.preventDefault(); // stop page reload
+
+      const data = {
+        from: fromEl.dataset.code || '',
+        to: toEl.dataset.code || '',
+        date: document.getElementById('date').value || '',
+        ret: document.getElementById('ret').value || '',
+        adults: document.getElementById('adults').value || '1',
+        cabin: document.getElementById('cabin').value || 'ECONOMY',
+      };
+
+      if (!data.from || !data.to || !data.date) {
+        alert('Fill From, To, and Depart.');
+        return;
+      }
+
+      const qs = new URLSearchParams(data).toString();
+      // Must include '?' and open immediately on submit to avoid popup blockers
+      window.open('/flights/results.html?' + qs, '_blank', 'noopener');
+    });
+  </script>
+</body>
+</html>
