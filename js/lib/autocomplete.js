@@ -31,7 +31,6 @@ async function query(term) {
   return j;
 }
 
-// renamed to avoid duplicate/global collisions
 function rank(q, item) {
   const t = (item.name + ' ' + (item.country || '') + ' ' + item.code).toLowerCase();
   const s = t.indexOf(q.toLowerCase());
@@ -87,7 +86,7 @@ export function attachAutocomplete(input) {
       const it = items[i];
       input.value = `${it.name} (${it.code})`;
       input.dataset.code = it.code;                 // airport OR city
-      input.dataset.city = it.city_code || it.code; // prefer city code
+      input.dataset.city = it.city_code || it.code; // prefer city code (LON/NYC/PAR)
       menu.hidden = true;
     }
   });
