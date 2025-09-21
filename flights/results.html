@@ -44,9 +44,7 @@
     fetch('/api/search', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        from: req.from, to: req.to, date: req.date, ret: req.ret, currency: req.currency
-      })
+      body: JSON.stringify({ from: req.from, to: req.to, date: req.date, ret: req.ret, currency: req.currency })
     })
     .then(r => r.json())
     .then(data => {
@@ -65,37 +63,29 @@
         const currency = (o.currency || req.currency || 'USD').toUpperCase();
         const airline = (o.airline || '').toUpperCase() || '—';
 
+        // Build redirecting links
+        const base = new URLSearchParams({
+          from: dep, to: arr,
+          date: req.date, return: req.ret,
+          adults: String(req.adults),
+          currency: currency,
+          redirect: '1' // important
+        });
+        const kiwiHref = '/api/book?p=kiwi&' + base.toString();
+        const aviaHref = '/api/book?p=aviasales&' + base.toString();
+
         const card = document.createElement('div'); card.className='card';
         card.innerHTML = `
-          <div class="row"><span class="tag">${airline}</span><strong style="margin-left:8px">${dep} → ${arr}</strong></div>
+          <div class="row">
+            <span class="tag">${airline}</span>
+            <strong style="margin-left:8px">${dep} → ${arr}</strong>
+          </div>
           <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
           <div class="row">
-            <a class="btn" data-p="kiwi">Book — ${price} ${currency}</a>
-            <a class="btn ghost" data-p="aviasales">Book (Aviasales)</a>
+            <a class="btn" href="${kiwiHref}" target="_blank" rel="noopener">Book — ${price} ${currency}</a>
+            <a class="btn ghost" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales)</a>
           </div>
         `;
-
-        // Both buttons call /api/book with provider p=...
-        for (const a of card.querySelectorAll('a[data-p]')) {
-          a.href = '#'; a.target = '_blank'; a.rel = 'noopener';
-          const provider = a.dataset.p;
-          a.addEventListener('click', async (ev) => {
-            ev.preventDefault();
-            const q2 = new URLSearchParams({
-              p: provider,
-              from: dep, to: arr,
-              date: req.date, return: req.ret,
-              adults: String(req.adults),
-              currency: currency
-            });
-            try {
-              const r = await fetch('/api/book?' + q2.toString());
-              const j = await r.json();
-              if (j.ok && j.url) window.open(j.url, '_blank', 'noopener');
-            } catch {}
-          });
-        }
-
         resEl.appendChild(card);
       });
     })
