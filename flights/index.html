@@ -37,35 +37,40 @@
   </main>
 
   <!-- Keep this single module script at the very end so the form exists -->
-  <script type="module">
-    import { attachAutocomplete } from '/js/lib/autocomplete.js';
+  <!-- change the button in the form -->
+<!-- find the button and make sure it looks exactly like this -->
+<div style="align-self:end">
+  <button id="go" class="btn" type="button">Test selection</button>
+</div>
 
-    const fromEl = document.getElementById('from');
-    const toEl   = document.getElementById('to');
-    attachAutocomplete(fromEl);
-    attachAutocomplete(toEl);
+<!-- keep this single module script at the very end of the file -->
+<script type="module">
+  import { attachAutocomplete } from '/js/lib/autocomplete.js';
 
-    document.getElementById('search').addEventListener('submit', (e) => {
-      e.preventDefault(); // stop page reload
+  const fromEl = document.getElementById('from');
+  const toEl   = document.getElementById('to');
+  attachAutocomplete(fromEl);
+  attachAutocomplete(toEl);
 
-      const data = {
-        from: fromEl.dataset.code || '',
-        to: toEl.dataset.code || '',
-        date: document.getElementById('date').value || '',
-        ret: document.getElementById('ret').value || '',
-        adults: document.getElementById('adults').value || '1',
-        cabin: document.getElementById('cabin').value || 'ECONOMY',
-      };
+  // safety: stop any native form submit
+  document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
 
-      if (!data.from || !data.to || !data.date) {
-        alert('Fill From, To, and Depart.');
-        return;
-      }
+  // open results in a NEW TAB on click
+  document.getElementById('go').addEventListener('click', () => {
+    const data = {
+      from: fromEl.dataset.code || '',
+      to: toEl.dataset.code || '',
+      date: document.getElementById('date').value || '',
+      ret: document.getElementById('ret').value || '',
+      adults: document.getElementById('adults').value || '1',
+      cabin: document.getElementById('cabin').value || 'ECONOMY',
+    };
+    if (!data.from || !data.to || !data.date) {
+      alert('Fill From, To, and Depart.');
+      return;
+    }
+    const url = '/flights/results.html?' + new URLSearchParams(data).toString();
+    window.open(url, '_blank', 'noopener'); // opens new tab, keeps your page
+  });
+</script>
 
-      const qs = new URLSearchParams(data).toString();
-      // Must include '?' and open immediately on submit to avoid popup blockers
-      window.open('/flights/results.html?' + qs, '_blank', 'noopener');
-    });
-  </script>
-</body>
-</html>
