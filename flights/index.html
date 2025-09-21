@@ -43,34 +43,25 @@
   <button id="go" class="btn" type="button">Test selection</button>
 </div>
 
-<!-- keep this single module script at the very end of the file -->
 <script type="module">
   import { attachAutocomplete } from '/js/lib/autocomplete.js';
-
   const fromEl = document.getElementById('from');
   const toEl   = document.getElementById('to');
   attachAutocomplete(fromEl);
   attachAutocomplete(toEl);
 
-  // safety: stop any native form submit
   document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
-
-  // open results in a NEW TAB on click
   document.getElementById('go').addEventListener('click', () => {
     const data = {
-      from: fromEl.dataset.code || '',
-      to: toEl.dataset.code || '',
+      // prefer city codes for the API; fall back to what’s selected
+      from: (fromEl.dataset.city || fromEl.dataset.code || '').toUpperCase(),
+      to:   (toEl.dataset.city   || toEl.dataset.code   || '').toUpperCase(),
       date: document.getElementById('date').value || '',
-      ret: document.getElementById('ret').value || '',
+      ret:  document.getElementById('ret').value  || '',
       adults: document.getElementById('adults').value || '1',
       cabin: document.getElementById('cabin').value || 'ECONOMY',
     };
-    if (!data.from || !data.to || !data.date) {
-      alert('Fill From, To, and Depart.');
-      return;
-    }
-    const url = '/flights/results.html?' + new URLSearchParams(data).toString();
-    window.open(url, '_blank', 'noopener'); // opens new tab, keeps your page
+    if (!data.from || !data.to || !data.date) { alert('Fill From, To, and Depart.'); return; }
+    window.open('/flights/results.html?' + new URLSearchParams(data).toString(), '_blank', 'noopener');
   });
 </script>
-
