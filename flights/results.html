@@ -5,46 +5,26 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Results — PurpleFlights</title>
   <style>
-    :root{--bg:#f7f7fb;--txt:#191a1f;--muted:#6b7280;--card:#fff;--br:#e5e7eb;--btn:#1f2937}
-    *{box-sizing:border-box}
-    body{font-family:system-ui,Arial,sans-serif;margin:0;background:var(--bg);color:var(--txt)}
-    .container{max-width:1000px;margin:0 auto;padding:16px}
-    h1{margin:12px 0 8px}
-    .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
-    .small{font-size:12px;color:var(--muted)}
-    select{padding:8px 10px;border:1px solid var(--br);border-radius:10px;background:#fff}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-    .card{background:var(--card);border:1px solid var(--br);border-radius:16px;padding:16px;box-shadow:0 6px 12px rgba(0,0,0,.05)}
-    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .air{display:flex;align-items:center;gap:8px}
-    .air .logo{width:24px;height:24px;border-radius:50%;background:#eef2ff;border:1px solid #e0e7ff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#3730a3;overflow:hidden}
-    .air .logo img{width:100%;height:100%;object-fit:cover;display:block}
-    .btn{display:inline-block;padding:10px 14px;border-radius:999px;border:1px solid var(--br);text-decoration:none;background:var(--btn);color:#fff}
-    .btn.ghost{background:#fff;color:var(--txt)}
-    .muted{color:var(--muted)}
-    .spinner{width:24px;height:24px;border-radius:50%;border:3px solid #ddd;border-top-color:#333;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    body{font-family:system-ui,Arial,sans-serif;margin:0;background:#f7f7fb;color:#191a1f}
+    .container{max-width:960px;margin:0 auto;padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 6px 12px rgba(0,0,0,.05)}
+    .tag{display:inline-block;background:#eef2ff;border:1px solid #e0e7ff;color:#3730a3;font-size:12px;padding:2px 8px;border-radius:999px}
+    .btn{display:inline-block;padding:10px 14px;border-radius:999px;border:1px solid #e5e7eb;text-decoration:none;color:#fff;background:#1f2937}
+    .btn.ghost{background:#fff;color:#1f2937}
+    .muted{color:#6b7280}.small{font-size:12px}
+    .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    h1{margin:16px 0 8px}
   </style>
 </head>
 <body>
   <main class="container">
     <h1>Results</h1>
-
-    <div class="toolbar">
-      <div id="route" class="small"></div>
-      <label class="small">Currency
-        <select id="currency">
-          <option>USD</option><option>EUR</option><option>GBP</option>
-          <option>AUD</option><option>CAD</option><option>THB</option><option>SGD</option>
-        </select>
-      </label>
-    </div>
-
+    <div id="meta" class="muted small"></div>
     <div id="results" class="grid"></div>
   </main>
 
   <script>
-    // ------- read query -------
     const qs = new URLSearchParams(location.search);
     const req = {
       from: (qs.get('from')||'').toUpperCase(),
@@ -53,101 +33,73 @@
       ret: qs.get('ret')||'',
       adults: +(qs.get('adults')||1),
       cabin: qs.get('cabin')||'ECONOMY',
-      currency: (qs.get('currency')||guessCurrency()).toUpperCase(),
+      currency: (qs.get('currency')||'USD').toUpperCase(),
     };
-    document.getElementById('route').textContent =
+    document.getElementById('meta').textContent =
       `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
-    const curSel = document.getElementById('currency');
-    curSel.value = req.currency;
-
-    curSel.addEventListener('change', () => {
-      req.currency = curSel.value.toUpperCase();
-      runSearch(); // re-run in place
-    });
-
     const resEl = document.getElementById('results');
+    resEl.innerHTML = '<div class="card">Searching…</div>';
 
-    // ------- small helpers -------
-    function guessCurrency(){
-      const l=(navigator.language||'en-US').toLowerCase();
-      if (l.endsWith('-gb')) return 'GBP';
-      if (/-de|-fr|-es|-it|-nl|-pt|-ie|-be|-fi|-at/.test(l)) return 'EUR';
-      if (l.endsWith('-th')) return 'THB';
-      if (l.endsWith('-sg')) return 'SGD';
-      if (l.endsWith('-au')) return 'AUD';
-      if (l.endsWith('-ca')) return 'CAD';
-      return 'USD';
-    }
-    function logoImg(code){
-      // Kiwi public logo CDN; fallback to initials if missing
-      const c=(code||'').toUpperCase();
-      const url=`https://images.kiwi.com/airlines/64/${encodeURIComponent(c)}.png`;
-      return `<span class="logo"><img src="${url}" alt="${c}" onerror="this.onerror=null;this.parentNode.textContent='${c||'–'}'"></span>`;
-    }
-
-    async function runSearch(){
-      resEl.innerHTML = `<div class="card"><div class="row"><div class="spinner"></div><div>Searching…</div></div></div>`;
-      try{
-        const r = await fetch('/api/search', {
-          method:'POST',
-          headers:{'content-type':'application/json'},
-          body: JSON.stringify({ from:req.from, to:req.to, date:req.date, ret:req.ret, currency:req.currency })
-        });
-        const data = await r.json();
-        if (data?.error) {
-          resEl.innerHTML = `<div class="card">Search error: ${data.error}</div>`;
-          return;
-        }
-        const offers = Array.isArray(data?.data) ? data.data : [];
-        if (!offers.length) { resEl.innerHTML = '<div class="card">No results.</div>'; return; }
-
-        resEl.innerHTML='';
-        offers.slice(0, 30).forEach(o=>{
-          const dep = o.origin || req.from;
-          const arr = o.destination || req.to;
-          const price = o.price;
-          const currency = (o.currency || req.currency).toUpperCase();
-          const carrier = (o.airline || '').toUpperCase();
-          const card = document.createElement('div'); card.className='card';
-          card.innerHTML = `
-            <div class="row air">
-              ${logoImg(carrier)}
-              <strong>${dep} → ${arr}</strong>
-            </div>
-            <div class="small muted" style="margin:6px 0 12px">Indicative fare</div>
-            <div class="row">
-              <a class="btn" data-p="kiwi">Book — ${price} ${currency}</a>
-              <a class="btn ghost" data-p="aviasales">Book (Aviasales)</a>
-            </div>
-          `;
-          // Both buttons -> /api/book?p=...
-          for (const a of card.querySelectorAll('a[data-p]')){
-            const provider = a.dataset.p;
-            a.href = '#'; a.target='_blank'; a.rel='noopener';
-            a.addEventListener('click', async (ev)=>{
-              ev.preventDefault();
-              const q2 = new URLSearchParams({
-                p: provider, from: dep, to: arr,
-                date: req.date, return: req.ret,
-                adults: String(req.adults),
-                currency: currency
-              });
-              try{
-                const r=await fetch('/api/book?'+q2.toString());
-                const j=await r.json();
-                if (j.ok && j.url) window.open(j.url,'_blank','noopener');
-              }catch{}
-            });
-          }
-          resEl.appendChild(card);
-        });
-      }catch(e){
-        resEl.innerHTML = `<div class="card">Search failed: ${e.message}</div>`;
+    fetch('/api/search', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        from: req.from, to: req.to, date: req.date, ret: req.ret, currency: req.currency
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.error) {
+        resEl.innerHTML = `<div class="card">Search error: ${data.error}</div>`;
+        return;
       }
-    }
+      const offers = Array.isArray(data?.data) ? data.data : [];
+      if (!offers.length) { resEl.innerHTML = '<div class="card">No results.</div>'; return; }
 
-    runSearch();
+      resEl.innerHTML = '';
+      offers.slice(0, 30).forEach(o => {
+        const dep = o.origin || req.from;
+        const arr = o.destination || req.to;
+        const price = o.price;
+        const currency = (o.currency || req.currency || 'USD').toUpperCase();
+        const airline = (o.airline || '').toUpperCase() || '—';
+
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `
+          <div class="row"><span class="tag">${airline}</span><strong style="margin-left:8px">${dep} → ${arr}</strong></div>
+          <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
+          <div class="row">
+            <a class="btn" data-p="kiwi">Book — ${price} ${currency}</a>
+            <a class="btn ghost" data-p="aviasales">Book (Aviasales)</a>
+          </div>
+        `;
+
+        // Both buttons call /api/book with provider p=...
+        for (const a of card.querySelectorAll('a[data-p]')) {
+          a.href = '#'; a.target = '_blank'; a.rel = 'noopener';
+          const provider = a.dataset.p;
+          a.addEventListener('click', async (ev) => {
+            ev.preventDefault();
+            const q2 = new URLSearchParams({
+              p: provider,
+              from: dep, to: arr,
+              date: req.date, return: req.ret,
+              adults: String(req.adults),
+              currency: currency
+            });
+            try {
+              const r = await fetch('/api/book?' + q2.toString());
+              const j = await r.json();
+              if (j.ok && j.url) window.open(j.url, '_blank', 'noopener');
+            } catch {}
+          });
+        }
+
+        resEl.appendChild(card);
+      });
+    })
+    .catch(e => { resEl.innerHTML = `<div class="card">Search failed: ${e.message}</div>`; });
   </script>
 </body>
 </html>
