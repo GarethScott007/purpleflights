@@ -37,47 +37,62 @@
     resEl.innerHTML = '<div class="card">Searching…</div>';
 
     fetch('/api/search', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ from: req.from, to: req.to, date: req.date, ret: req.ret })
-    })
-    .then(r => r.json())
-    .then(data => {
-      const offers = Array.isArray(data?.data) ? data.data : [];
-      if (!offers.length) { resEl.innerHTML = '<div class="card">No results.</div>'; return; }
-      resEl.innerHTML = '';
-      offers.slice(0, 30).forEach(o => {
-        const price = o.price;
-        const currency = o.currency || 'USD';
-        const dep = o.origin || req.from;
-        const arr = o.destination || req.to;
-        const airline = (o.airline || '').toUpperCase() || '—';
-        const card = document.createElement('div'); card.className='card';
-        card.innerHTML = `
-          <div class="row">
-            <span class="tag">${airline}</span>
-            <strong style="margin-left:8px">${dep} → ${arr}</strong>
-          </div>
-          <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
-          <a class="btn" target="_blank" rel="noopener">Book — ${price} ${currency}</a>
-        `;
-        // Build /api/book link (opens new tab)
-        const a = card.querySelector('a');
-        const q2 = new URLSearchParams({ from: dep, to: arr, date: req.date, return: req.ret });
-        a.href = '/api/book?' + q2.toString();
-        a.addEventListener('click', async (ev) => {
-          // Replace href with deep link from API, then follow; keeps your page open
-          ev.preventDefault();
-          try {
-            const r = await fetch('/api/book?' + q2.toString());
-            const j = await r.json();
-            if (j.ok && j.url) window.open(j.url, '_blank', 'noopener');
-          } catch {}
-        });
-        resEl.appendChild(card);
-      });
-    })
-    .catch(e => { resEl.innerHTML = '<div class="card">Search failed.</div>'; });
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ from: req.from, to: req.to, date: req.date, ret: req.ret })
+})
+.then(r => r.json())
+.then(data => {
+  // NEW: show backend error instead of silent empty state
+  if (data && data.error) {
+    resEl.innerHTML = `<div class="card">Search error: ${data.error}</div>`;
+    return;
+  }
+
+  const offers = Array.isArray(data?.data) ? data.data : [];
+  if (!offers.length) {
+    resEl.innerHTML = '<div class="card">No results.</div>';
+    return;
+  }
+
+  resEl.innerHTML = '';
+  offers.slice(0, 30).forEach(o => {
+    const price = o.price;
+    const currency = o.currency || 'USD';
+    const dep = o.origin || req.from;
+    const arr = o.destination || req.to;
+    const airline = (o.airline || '').toUpperCase() || '—';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="row">
+        <span class="tag">${airline}</span>
+        <strong style="margin-left:8px">${dep} → ${arr}</strong>
+      </div>
+      <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
+      <a class="btn" target="_blank" rel="noopener">Book — ${price} ${currency}</a>
+    `;
+
+    // Build /api/book link (opens in new tab)
+    const a = card.querySelector('a');
+    const q2 = new URLSearchParams({ from: dep, to: arr, date: req.date, return: req.ret });
+    a.addEventListener('click', async (ev) => {
+      ev.preventDefault(); // keep your page open
+      try {
+        const r = await fetch('/api/book?' + q2.toString());
+        const j = await r.json();
+        if (j.ok && j.url) window.open(j.url, '_blank', 'noopener');
+      } catch {}
+    });
+
+    resEl.appendChild(card);
+  });
+})
+.catch(e => {
+  resEl.innerHTML = `<div class="card">Search failed: ${e.message}</div>`;
+});
+
   </script>
 </body>
 </html>
