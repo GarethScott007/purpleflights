@@ -53,7 +53,6 @@
   document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
   document.getElementById('go').addEventListener('click', () => {
     const data = {
-      // prefer city codes for the API; fall back to what’s selected
       from: (fromEl.dataset.city || fromEl.dataset.code || '').toUpperCase(),
       to:   (toEl.dataset.city   || toEl.dataset.code   || '').toUpperCase(),
       date: document.getElementById('date').value || '',
