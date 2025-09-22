@@ -1,10 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Results — PurpleFlights</title>
-  <link rel="stylesheet" href="/css/theme.css"/>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Results — PurpleFlights</title><link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
 <header class="topbar">
@@ -15,19 +13,13 @@
       <a class="pill ghost" href="/#">Group Trips</a>
       <span class="badge">Patent pending</span>
       <a class="pill ghost" href="/#">Contact</a>
+      <a id="hotels" class="pill gradient" target="_blank" rel="noopener">Hotels</a>
     </nav>
   </div>
 </header>
 
 <main class="container">
-  <div class="row spread" style="margin:8px 0 12px">
-    <div id="meta" class="small muted"></div>
-    <div class="row gap">
-      <!-- Hotels landing (TP) -->
-      <a id="hotels" class="pill" target="_blank" rel="noopener">Hotels</a>
-    </div>
-  </div>
-
+  <div class="small muted" id="meta" style="margin:8px 0 12px"></div>
   <div id="results" class="grid"></div>
 </main>
 
@@ -42,63 +34,60 @@ const req = {
   date:qs.get('date')||'',
   ret:qs.get('ret')||'',
   adults:+(qs.get('adults')||1),
+  children:+(qs.get('children')||0),
+  infants:+(qs.get('infants')||0),
   currency:(qs.get('currency')||'USD').toUpperCase(),
 };
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
-// Hotels button (Travelpayouts Hotels landing, marker=670577)
+// Hotels pill (TP Hotels landing)
 (function(){
-  const h = document.getElementById('hotels');
-  const u = new URL('https://hotels-comparer.com/');
+  const h=document.getElementById('hotels');
+  const u=new URL('https://hotels-comparer.com/'); // TP Hotels landing
   u.searchParams.set('marker','670577');
-  if (req.date) u.searchParams.set('checkIn', req.date);
-  if (req.ret)  u.searchParams.set('checkOut', req.ret);
-  h.href = u.toString();
+  if(req.date) u.searchParams.set('checkIn', req.date);
+  if(req.ret)  u.searchParams.set('checkOut', req.ret);
+  h.href=u.toString();
 })();
 
 const resEl=document.getElementById('results');
 resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
 
 fetch('/api/search',{method:'POST',headers:{'content-type':'application/json'},
-  body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency})})
+  body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:50})})
 .then(r=>r.json())
 .then(data=>{
   if(data?.error){ resEl.innerHTML = `<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
-  const offers = Array.isArray(data?.data) ? data.data : [];
+  const offers=Array.isArray(data?.data)?data.data:[];
   if(!offers.length){ resEl.innerHTML='<div class="card" style="padding:16px">No results.</div>'; return; }
 
   resEl.innerHTML='';
-  offers.slice(0,30).forEach(o=>{
+  offers.slice(0,50).forEach(o=>{
     const dep=o.origin||req.from, arr=o.destination||req.to;
     const price=o.price, cur=(o.currency||req.currency||'USD').toUpperCase();
     const carrier=(o.airline||'').toUpperCase()||'–';
 
     const base = new URLSearchParams({
-      from: dep, to: arr,
-      date: req.date, return: req.ret,
-      adults: String(req.adults),
-      currency: cur,
-      redirect: '1'
+      from:dep,to:arr,date:req.date,return:req.ret,
+      adults:String(req.adults),currency:cur,redirect:'1'
     });
+    // If you later add children/infants to Kiwi only:
+    // base.set('children', String(req.children)); base.set('infants', String(req.infants));
 
-    const kiwiHref = '/api/book?p=kiwi&' + base.toString();        // if you prefer direct links: build them here instead
-    const aviaHref = '/api/book?p=aviasales&' + base.toString();
+    const kiwiHref='/api/book?p=kiwi&'+base.toString();
+    const aviaHref='/api/book?p=aviasales&'+base.toString();
 
     const card=document.createElement('div'); card.className='card';
-    card.innerHTML = `
+    card.innerHTML=`
       <div class="row" style="justify-content:space-between">
-        <div class="row">
-          <span class="chip">${carrier}</span>
-          <strong style="margin-left:10px">${dep} → ${arr}</strong>
-        </div>
+        <div class="row"><span class="chip">${carrier}</span><strong style="margin-left:10px">${dep} → ${arr}</strong></div>
       </div>
       <div class="muted small" style="margin:8px 0 14px">Indicative fare</div>
       <div class="row">
         <a class="btn gradient no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
-        <a class="btn ghost no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales)</a>
-      </div>
-    `;
+        <a class="btn ghost no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
+      </div>`;
     resEl.appendChild(card);
   });
 })
