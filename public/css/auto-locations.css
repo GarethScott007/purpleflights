@@ -1,0 +1,19 @@
+/* /public/css/auto-locations.css */
+/* NEW FILE — styles for the dropdown */
+
+.plf-ac-wrap { position: relative; display: inline-block; width: 100%; }
+.plf-ac-input { width: 100%; }
+.plf-ac-list {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px);
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08); max-height: 260px; overflow: auto; display: none;
+}
+.plf-ac-item {
+  width: 100%; padding: 10px 12px; display: grid; grid-template-columns: 64px 1fr auto auto; gap: 10px;
+  align-items: baseline; background: transparent; border: 0; text-align: left; cursor: pointer;
+}
+.plf-ac-item:hover, .plf-ac-item.is-active { background: #f9fafb; }
+.plf-ac-code { font-weight: 700; }
+.plf-ac-main { font-weight: 600; }
+.plf-ac-sub { color: #6b7280; }
+.plf-ac-cty { color: #9ca3af; }
