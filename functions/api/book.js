@@ -1,13 +1,8 @@
 // functions/api/book.js
-const JH = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store",
-};
+const JH = { "content-type":"application/json; charset=utf-8", "cache-control":"no-store" };
 
 export const onRequestGet = async ({ request, env }) => {
   const u = new URL(request.url);
-
-  // provider: kiwi | aviasales (default if p is missing)
   const p = (u.searchParams.get("p") || String(env.BOOK_PROVIDER || "kiwi")).toLowerCase();
 
   const from = (u.searchParams.get("from") || "").toUpperCase();
@@ -16,11 +11,10 @@ export const onRequestGet = async ({ request, env }) => {
   const ret  = u.searchParams.get("return") || "";
   const adults = clamp(u.searchParams.get("adults"), 1, 9, 1);
   const currency = (u.searchParams.get("currency") || "USD").toUpperCase();
-  const redirect = u.searchParams.get("redirect") === "1"; // NEW
+  const redirect = u.searchParams.get("redirect") === "1";
 
-  // Validate
   if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to) || !date) {
-    return json({ ok: false, error: "missing/invalid params" }, 400);
+    return json({ ok:false, error:"missing/invalid params" }, 400);
   }
 
   let url = "";
@@ -35,27 +29,25 @@ export const onRequestGet = async ({ request, env }) => {
     if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID));
     url = "https://www.aviasales.com/search?" + q.toString();
   } else {
+    // Build Kiwi results URL
     const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
-    const q = new URLSearchParams();
-    q.set("adults", String(adults));
-    q.set("cabin", "M");
-    q.set("currency", currency);
-    if (env.KIWI_AFFILIATE_ID) q.set("affilid", String(env.KIWI_AFFILIATE_ID));
-    url = `https://www.kiwi.com/en/search/results/${seg}?` + q.toString();
+    const kiwi = `https://www.kiwi.com/en/search/results/${seg}?adults=${adults}&cabin=M&currency=${currency}`;
+
+    // Prefer TP click wrapper if provided (recommended)
+    if (env.KIWI_TP_CLICK_BASE) {
+      const base = String(env.KIWI_TP_CLICK_BASE);
+      // Ensure base ends with custom_url=
+      const prefix = base.endsWith("custom_url=") ? base : base + (base.includes("?") ? "" : "?") + "custom_url=";
+      url = prefix + encodeURIComponent(kiwi);
+    } else {
+      // Fallback: plain Kiwi (no TP click wrapper)
+      url = kiwi;
+    }
   }
 
-  // NEW: redirect mode for plain <a href> links
-  if (redirect) {
-    return Response.redirect(url, 302);
-  }
-  return json({ ok: true, url });
+  if (redirect) return Response.redirect(url, 302);
+  return json({ ok:true, url });
 };
 
-function clamp(v, min, max, def) {
-  const n = parseInt(v || "", 10);
-  if (Number.isNaN(n)) return def;
-  return Math.max(min, Math.min(max, n));
-}
-function json(obj, code = 200) {
-  return new Response(JSON.stringify(obj), { status: code, headers: JH });
-}
+function clamp(v,min,max,def){ const n=parseInt(v||"",10); if(Number.isNaN(n)) return def; return Math.max(min,Math.min(max,n)); }
+function json(obj,code=200){ return new Response(JSON.stringify(obj),{ status:code, headers:JH }); }
