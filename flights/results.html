@@ -63,13 +63,12 @@
         const currency = (o.currency || req.currency || 'USD').toUpperCase();
         const airline = (o.airline || '').toUpperCase() || '—';
 
-        // Build redirecting links
         const base = new URLSearchParams({
           from: dep, to: arr,
           date: req.date, return: req.ret,
           adults: String(req.adults),
           currency: currency,
-          redirect: '1' // important
+          redirect: '1'
         });
         const kiwiHref = '/api/book?p=kiwi&' + base.toString();
         const aviaHref = '/api/book?p=aviasales&' + base.toString();
@@ -82,7 +81,7 @@
           </div>
           <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
           <div class="row">
-            <a class="btn" href="${kiwiHref}" target="_blank" rel="noopener">Book — ${price} ${currency}</a>
+            <a class="btn" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${currency}</a>
             <a class="btn ghost" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales)</a>
           </div>
         `;
