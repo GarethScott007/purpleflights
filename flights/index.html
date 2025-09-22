@@ -36,43 +36,50 @@
     </form>
   </main>
 
-  <script type="module">
-    import { attachAutocomplete } from '/js/lib/autocomplete.js';
-    const fromEl = document.getElementById('from');
-    const toEl   = document.getElementById('to');
-    attachAutocomplete(fromEl);
-    attachAutocomplete(toEl);
+<script type="module">
+  import { attachAutocomplete } from '/js/lib/autocomplete.js';
+  const fromEl = document.getElementById('from');
+  const toEl   = document.getElementById('to');
+  attachAutocomplete(fromEl); attachAutocomplete(toEl);
 
-    // stop any accidental form submit
-    document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
+  // Stop native submit
+  document.getElementById('search').addEventListener('submit', (e)=> e.preventDefault());
 
-    // robust IATA picker: prefer dataset.city (LON), then dataset.code (LHR), then parse typed text
-    function pickCode(input) {
-      const a = (input.dataset.city || '').toUpperCase();
-      const b = (input.dataset.code || '').toUpperCase();
-      if (/^[A-Z]{3}$/.test(a)) return a;
-      if (/^[A-Z]{3}$/.test(b)) return b;
-      const v = (input.value || '').trim().toUpperCase();
-      const m = v.match(/\(([A-Z]{3})\)/); if (m) return m[1];
-      const t = v.replace(/[^A-Z]/g,''); return /^[A-Z]{3}$/.test(t) ? t : '';
-    }
+  // Guess a sane default currency once (GB→GBP, EU→EUR, TH→THB, SG→SGD, AU→AUD, CA→CAD, else USD)
+  const curSel = document.getElementById('currency');
+  if (curSel) {
+    const l=(navigator.language||'en-US').toLowerCase();
+    const guess = l.endsWith('-gb') ? 'GBP'
+                : l.endsWith('-au') ? 'AUD'
+                : l.endsWith('-ca') ? 'CAD'
+                : l.endsWith('-sg') ? 'SGD'
+                : l.endsWith('-th') ? 'THB'
+                : (/-de|-fr|-es|-it|-nl|-pt|-ie|-be|-fi|-at/.test(l) ? 'EUR' : 'USD');
+    if ([...curSel.options].some(o => o.value === guess)) curSel.value = guess;
+  }
 
-    document.getElementById('go').addEventListener('click', () => {
-      const data = {
-        from: pickCode(fromEl),
-        to:   pickCode(toEl),
-        date: document.getElementById('date').value || '',
-        ret:  document.getElementById('ret').value  || '',
-        adults: document.getElementById('adults').value || '1',
-        cabin:  document.getElementById('cabin').value  || 'ECONOMY',
-      };
-      if (!data.from || !data.to || !data.date) {
-        alert('Fill From, To, and Depart (choose from dropdown so code is 3 letters).');
-        return;
-      }
-      const url = '/flights/results.html?' + new URLSearchParams(data).toString();
-      window.open(url, '_blank', 'noopener');
-    });
-  </script>
-</body>
-</html>
+  // Robust IATA picker (prefers city code)
+  function pickCode(input){
+    const a=(input.dataset.city||'').toUpperCase();
+    const b=(input.dataset.code||'').toUpperCase();
+    if(/^[A-Z]{3}$/.test(a)) return a;
+    if(/^[A-Z]{3}$/.test(b)) return b;
+    const v=(input.value||'').trim().toUpperCase();
+    const m=v.match(/\(([A-Z]{3})\)/); if(m) return m[1];
+    const t=v.replace(/[^A-Z]/g,''); return /^[A-Z]{3}$/.test(t)?t:'';
+  }
+
+  document.getElementById('go').addEventListener('click', () => {
+    const data = {
+      from: pickCode(fromEl),
+      to:   pickCode(toEl),
+      date: document.getElementById('date').value || '',
+      ret:  document.getElementById('ret').value  || '',
+      adults: document.getElementById('adults').value || '1',
+      cabin:  document.getElementById('cabin').value  || 'ECONOMY',
+      currency: (curSel?.value || 'USD').toUpperCase(),   // <-- include currency
+    };
+    if (!data.from || !data.to || !data.date) { alert('Fill From, To, and Depart.'); return; }
+    window.open('/flights/results.html?' + new URLSearchParams(data).toString(), '_blank', 'noopener');
+  });
+</script>
