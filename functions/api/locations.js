@@ -1,9 +1,7 @@
 /* /functions/api/locations.js */
-/* NEW FILE — simple Locations API with caching + search (EN/TH names) */
+/* REPLACE FILE — compatible response for existing autocomplete + caching */
 
 export const onRequestGet = async ({ request }) => {
-  // Small built-in list so it “just works”.
-  // Add more later; keep codes UPPERCASE.
   const LOCATIONS = [
     { code: "BKK", city_en: "Bangkok", city_th: "กรุงเทพฯ", name_en: "Suvarnabhumi", name_th: "สุวรรณภูมิ", country: "TH" },
     { code: "DMK", city_en: "Bangkok", city_th: "กรุงเทพฯ", name_en: "Don Mueang", name_th: "ดอนเมือง", country: "TH" },
@@ -15,7 +13,6 @@ export const onRequestGet = async ({ request }) => {
     { code: "USM", city_en: "Ko Samui", city_th: "เกาะสมุย",    name_en: "Samui",      name_th: "สมุย",     country: "TH" },
     { code: "KBV", city_en: "Krabi",   city_th: "กระบี่",       name_en: "Krabi",      name_th: "กระบี่",    country: "TH" },
     { code: "UTP", city_en: "Pattaya", city_th: "พัทยา",        name_en: "U-Tapao",    name_th: "อู่ตะเภา",   country: "TH" },
-    // A few neighbors (handy for searches)
     { code: "SIN", city_en: "Singapore", city_th: "สิงคโปร์", name_en: "Changi", name_th: "ชางงี", country: "SG" },
     { code: "KUL", city_en: "Kuala Lumpur", city_th: "กัวลาลัมเปอร์", name_en: "Kuala Lumpur", name_th: "กัวลาลัมเปอร์", country: "MY" },
     { code: "HKG", city_en: "Hong Kong", city_th: "ฮ่องกง", name_en: "Hong Kong", name_th: "ฮ่องกง", country: "HK" },
@@ -26,24 +23,39 @@ export const onRequestGet = async ({ request }) => {
   const lang = (url.searchParams.get("lang") || "en").toLowerCase() === "th" ? "th" : "en";
   const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "20", 10) || 20, 1), 50);
 
-  const pick = (loc) => ({
-    code: loc.code,
-    city: lang === "th" ? loc.city_th : loc.city_en,
-    name: lang === "th" ? loc.name_th : loc.name_en,
-    country: loc.country,
-  });
+  const pick = (loc) => {
+    const city = lang === "th" ? loc.city_th : loc.city_en;
+    const name = lang === "th" ? loc.name_th : loc.name_en;
+    const label = `${city} — ${name} (${loc.code})`;
+    // Include multiple aliases so older widgets are happy.
+    return {
+      // old/common fields
+      code: loc.code,            // "BKK"
+      iata: loc.code,            // alias
+      value: loc.code,           // alias
+      label,                     // "Bangkok — Suvarnabhumi (BKK)"
+      title: label,              // alias some libs use
+      city,                      // "Bangkok" / "กรุงเทพฯ"
+      name,                      // "Suvarnabhumi" / "สุวรรณภูมิ"
+      country: loc.country,
+
+      // new fields (harmless extras)
+      city_en: loc.city_en,
+      city_th: loc.city_th,
+      name_en: loc.name_en,
+      name_th: loc.name_th,
+    };
+  };
 
   let results = LOCATIONS;
   if (q) {
-    results = results.filter((l) => {
-      return (
-        l.code.toLowerCase().includes(q) ||
-        l.city_en.toLowerCase().includes(q) ||
-        l.city_th.toLowerCase().includes(q) ||
-        l.name_en.toLowerCase().includes(q) ||
-        l.name_th.toLowerCase().includes(q)
-      );
-    });
+    results = results.filter((l) =>
+      l.code.toLowerCase().includes(q) ||
+      l.city_en.toLowerCase().includes(q) ||
+      l.city_th.toLowerCase().includes(q) ||
+      l.name_en.toLowerCase().includes(q) ||
+      l.name_th.toLowerCase().includes(q)
+    );
   }
 
   const body = JSON.stringify({
@@ -52,7 +64,6 @@ export const onRequestGet = async ({ request }) => {
     results: results.slice(0, limit).map(pick),
   });
 
-  // Cache headers: match your /_headers rule; safe if duplicated.
   return new Response(body, {
     headers: {
       "content-type": "application/json; charset=utf-8",
