@@ -1,25 +1,38 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Results — PurpleFlights</title>
-<style>
-  body{font-family:system-ui,Arial,sans-serif;margin:0;background:#f7f7fb;color:#191a1f}
-  .container{max-width:960px;margin:0 auto;padding:16px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 6px 12px rgba(0,0,0,.05)}
-  .tag{display:inline-block;background:#eef2ff;border:1px solid #e0e7ff;color:#3730a3;font-size:12px;padding:2px 8px;border-radius:999px}
-  .btn{display:inline-block;padding:10px 14px;border-radius:999px;border:1px solid #e5e7eb;text-decoration:none;color:#fff;background:#1f2937}
-  .btn.ghost{background:#fff;color:#1f2937}
-  .muted{color:#6b7280}.small{font-size:12px}
-  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  h1{margin:16px 0 8px}
-</style>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Results — PurpleFlights</title>
+  <link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
+<header class="topbar">
+  <div class="container row spread">
+    <a class="brand" href="/">PurpleFlights</a>
+    <nav class="row gap">
+      <a class="pill" href="/flights/">Flights</a>
+      <a class="pill ghost" href="/#">Group Trips</a>
+      <span class="badge">Patent pending</span>
+      <a class="pill ghost" href="/#">Contact</a>
+    </nav>
+  </div>
+</header>
+
 <main class="container">
-  <h1>Results</h1>
-  <div id="meta" class="muted small"></div>
+  <div class="row spread" style="margin:8px 0 12px">
+    <div id="meta" class="small muted"></div>
+    <div class="row gap">
+      <!-- Hotels landing (TP) -->
+      <a id="hotels" class="pill" target="_blank" rel="noopener">Hotels</a>
+    </div>
+  </div>
+
   <div id="results" class="grid"></div>
 </main>
+
+<footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 
 <script>
 const qs = new URLSearchParams(location.search);
@@ -34,48 +47,62 @@ const req = {
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
+// Hotels button (Travelpayouts Hotels landing, marker=670577)
+(function(){
+  const h = document.getElementById('hotels');
+  const u = new URL('https://hotels-comparer.com/');
+  u.searchParams.set('marker','670577');
+  if (req.date) u.searchParams.set('checkIn', req.date);
+  if (req.ret)  u.searchParams.set('checkOut', req.ret);
+  h.href = u.toString();
+})();
+
 const resEl=document.getElementById('results');
-resEl.innerHTML='<div class="card">Searching…</div>';
+resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
 
 fetch('/api/search',{method:'POST',headers:{'content-type':'application/json'},
   body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency})})
 .then(r=>r.json())
 .then(data=>{
-  if(data?.error){ resEl.innerHTML = `<div class="card">Search error: ${data.error}</div>`; return; }
-  const offers=Array.isArray(data?.data)?data.data:[];
-  if(!offers.length){ resEl.innerHTML='<div class="card">No results.</div>'; return; }
+  if(data?.error){ resEl.innerHTML = `<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
+  const offers = Array.isArray(data?.data) ? data.data : [];
+  if(!offers.length){ resEl.innerHTML='<div class="card" style="padding:16px">No results.</div>'; return; }
+
   resEl.innerHTML='';
   offers.slice(0,30).forEach(o=>{
     const dep=o.origin||req.from, arr=o.destination||req.to;
     const price=o.price, cur=(o.currency||req.currency||'USD').toUpperCase();
-    const airline=(o.airline||'').toUpperCase()||'—';
+    const carrier=(o.airline||'').toUpperCase()||'–';
 
-    // ---- Direct deep links (no redirect) ----
-    const kiwi = new URL(`https://www.kiwi.com/en/search/results/${dep}-${arr}/${req.date}${req.ret?`/${req.ret}`:''}`);
-    kiwi.searchParams.set('adults', String(req.adults));
-    kiwi.searchParams.set('cabin','M');
-    kiwi.searchParams.set('currency', cur);
-    kiwi.searchParams.set('affilid','c111.travelpayouts.com'); // your slug
+    const base = new URLSearchParams({
+      from: dep, to: arr,
+      date: req.date, return: req.ret,
+      adults: String(req.adults),
+      currency: cur,
+      redirect: '1'
+    });
 
-    const avs = new URL('https://www.aviasales.com/search');
-    avs.searchParams.set('origin_iata', dep);
-    avs.searchParams.set('destination_iata', arr);
-    avs.searchParams.set('depart_date', req.date);
-    if (req.ret) avs.searchParams.set('return_date', req.ret);
-    avs.searchParams.set('currency', cur);
-    avs.searchParams.set('marker', '670577'); // your marker
+    const kiwiHref = '/api/book?p=kiwi&' + base.toString();        // if you prefer direct links: build them here instead
+    const aviaHref = '/api/book?p=aviasales&' + base.toString();
 
     const card=document.createElement('div'); card.className='card';
     card.innerHTML = `
-      <div class="row"><span class="tag">${airline}</span><strong style="margin-left:8px">${dep} → ${arr}</strong></div>
-      <div class="muted small" style="margin:6px 0 12px">Indicative fare</div>
+      <div class="row" style="justify-content:space-between">
+        <div class="row">
+          <span class="chip">${carrier}</span>
+          <strong style="margin-left:10px">${dep} → ${arr}</strong>
+        </div>
+      </div>
+      <div class="muted small" style="margin:8px 0 14px">Indicative fare</div>
       <div class="row">
-        <a class="btn no-affiliate" href="${kiwi.toString()}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
-        <a class="btn ghost no-affiliate" href="${avs.toString()}" target="_blank" rel="noopener">Book (Aviasales)</a>
-      </div>`;
+        <a class="btn gradient no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
+        <a class="btn ghost no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales)</a>
+      </div>
+    `;
     resEl.appendChild(card);
   });
 })
-.catch(e=>{ resEl.innerHTML=`<div class="card">Search failed: ${e.message}</div>`; });
+.catch(e=>{ resEl.innerHTML=`<div class="card" style="padding:16px">Search failed: ${e.message}</div>`; });
 </script>
-</body></html>
+</body>
+</html>
