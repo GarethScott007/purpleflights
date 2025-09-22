@@ -1,0 +1,32 @@
+<!-- /public/results.html -->
+<!-- NEW FILE: full page with Results header + EN/TH + #results container -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PurpleFlights — Results</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Your existing theme (purple → gold). Keep this first. -->
+    <link rel="stylesheet" href="/css/theme.css" />
+
+    <!-- Results header styling (gradient pill bar) -->
+    <link rel="stylesheet" href="/css/results-header.css" />
+  </head>
+  <body>
+    <!-- Results header (inserted by results-header.js) will appear above this container -->
+    <main class="container" style="max-width: 960px; margin: 0 auto; padding: 16px;">
+      <!-- This is where your results list renders -->
+      <div id="results"></div>
+
+      <!-- Optional placeholder so the page doesn't look empty before your app renders -->
+      <noscript>Please enable JavaScript to view flight results.</noscript>
+    </main>
+
+    <!-- i18n dictionary + language store (EN/TH) -->
+    <script src="/js/i18n.js" defer></script>
+    <!-- Renders the purple→gold Results header and its EN/TH selector -->
+    <script src="/js/results-header.js" defer></script>
+  </body>
+</html>
