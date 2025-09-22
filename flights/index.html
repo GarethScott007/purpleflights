@@ -1,4 +1,3 @@
-<!-- /flights/index.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -112,7 +111,7 @@
   document.getElementById('lang-en').addEventListener('click',()=>setLang('en'));
   document.getElementById('lang-th').addEventListener('click',()=>setLang('th'));
 
-  // Autocomplete — your original script
+  // Autocomplete
   const fromEl=document.getElementById('from'), toEl=document.getElementById('to');
   attachAutocomplete(fromEl); attachAutocomplete(toEl);
 
@@ -137,7 +136,7 @@
     advBtn.setAttribute('aria-expanded', String(open));
   });
 
-  // Build results link
+  // Helpers
   function pickCode(input){
     const a=(input.dataset.city||'').toUpperCase(), b=(input.dataset.code||'').toUpperCase();
     if(/^[A-Z]{3}$/.test(a)) return a; if(/^[A-Z]{3}$/.test(b)) return b;
@@ -156,12 +155,10 @@
       cabin:document.getElementById('cabin').value||'ECONOMY',
       currency:(curSel?.value||'USD').toUpperCase()
     });
-    if(!qs.get('from')||!qs.get('to')||!qs.get('date')){
-      alert(lang==='th'?'กรุณากรอกต้นทาง ปลายทาง และวันที่ออกเดินทาง':'Fill From, To, and Depart.');
-      return;
-    }
+    if(!qs.get('from')||!qs.get('to')||!qs.get('date')){ alert(lang==='th'?'กรุณากรอกต้นทาง ปลายทาง และวันที่ออกเดินทาง':'Fill From, To, and Depart.'); return; }
     window.open('/flights/results.html?'+qs.toString(),'_blank','noopener');
   });
+
 </script>
 </body>
 </html>
