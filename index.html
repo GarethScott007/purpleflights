@@ -1,9 +1,35 @@
+<!-- /index.html  (REPLACE WHOLE FILE) -->
 <!doctype html>
-<html>
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PurpleFlights</title></head>
-  <body style="font-family:system-ui,Arial,sans-serif;padding:20px">
-    <h1>It works 🎉</h1>
-    <p>This is the homepage. We’ll add flights after we wire Pages.</p>
-    <p>API health: <a href="/api/health" target="_blank" rel="noopener">open /api/health</a></p>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PurpleFlights</title>
+  <link rel="stylesheet" href="/css/theme.css"/>
+  <link rel="icon" href="/favicon.ico"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container row spread">
+      <a class="brand" href="/">PurpleFlights</a>
+      <nav class="row gap">
+        <a class="pill" href="/flights/">Flights</a>
+        <a class="pill ghost" href="/#">Group Trips</a>
+        <span class="badge">Patent pending</span>
+        <a class="pill ghost" href="/#">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero card">
+      <h1>Find flights the easy way</h1>
+      <p class="muted">Fast search. Clean results. Booking handled by trusted partners.</p>
+      <a class="btn" href="/flights/">Search flights</a>
+    </section>
+  </main>
+
+  <footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
+  <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+</body>
 </html>
