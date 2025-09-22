@@ -1,23 +1,55 @@
+/* /css/theme.css */
+
+/* =========================
+   THEME: Purple → Gold
+   ========================= */
 :root{
-  --purple:#6A00FF; --orchid:#A855F7; --gold:#FFD700; --gold-classic:#D4AF37;
-  --bg:#EFE7FF; --card:#FFFFFF; --text:#191A1F; --muted:#6B7280; --br:#E5E7EB;
-  --btn:#1F2937; --btn-text:#FFFFFF;
-  --r-pill:999px; --r-card:22px;
-  --shadow:0 16px 32px rgba(0,0,0,.10); --shadow-soft:0 10px 20px rgba(0,0,0,.08);
+  /* Core palette */
+  --purple:#6A00FF;      /* vivid purple */
+  --orchid:#A855F7;      /* mid stop – smooth blend */
+  --gold:#FFD700;        /* true gold */
+  --gold-classic:#D4AF37;
+
+  /* Surfaces & text */
+  --bg:#EFE7FF;
+  --card:#FFFFFF;
+  --text:#191A1F;
+  --muted:#6B7280;
+  --br:#E5E7EB;
+
+  /* Buttons */
+  --btn:#1F2937;
+  --btn-text:#FFFFFF;
+
+  /* Radii & shadows */
+  --r-pill:999px;
+  --r-card:22px;
+  --shadow:0 16px 32px rgba(0,0,0,.10);
+  --shadow-soft:0 10px 20px rgba(0,0,0,.08);
 }
-*{box-sizing:border-box} html,body{margin:0}
+
+/* Global */
+*{box-sizing:border-box}
+html,body{margin:0}
 body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
 a{text-decoration:none;color:inherit}
+
+/* Layout helpers */
 .container{max-width:1100px;margin:0 auto;padding:18px}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.gap{gap:12px} .spread{justify-content:space-between}
-.small{font-size:12px} .muted{color:var(--muted)}
+.gap{gap:12px}
+.spread{justify-content:space-between}
+.small{font-size:12px}
+.muted{color:var(--muted)}
 
+/* Topbar gradient */
 .topbar{
   background:linear-gradient(90deg,var(--purple) 0%,var(--orchid) 46%,var(--gold) 100%);
   padding:16px 0; position:sticky; top:0; z-index:10; box-shadow:0 2px 0 rgba(0,0,0,.04);
 }
 .brand{color:#fff;font-weight:700}
+
+/* Pills in header */
 .pill,.pill:visited{
   display:inline-block; padding:10px 16px; border-radius:var(--r-pill);
   background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.30);
@@ -33,9 +65,14 @@ a{text-decoration:none;color:inherit}
 .badge{display:inline-block;padding:8px 12px;border-radius:var(--r-pill);
   background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);font-size:12px}
 
-.hero{margin-top:22px;background:var(--card);border:1px solid var(--br);border-radius:var(--r-card);padding:28px;box-shadow:var(--shadow)}
-.hero h1{margin:0 0 10px;font-size:42px}
+/* Hero */
+.hero{
+  margin-top:22px; background:var(--card); border:1px solid var(--br);
+  border-radius:var(--r-card); padding:28px; box-shadow:var(--shadow)
+}
+.hero h1{margin:0 0 10px; font-size:42px}
 
+/* Cards & buttons */
 .card{background:var(--card);border:1px solid var(--br);border-radius:var(--r-card);box-shadow:var(--shadow-soft)}
 .btn{display:inline-block;padding:12px 18px;border-radius:var(--r-pill);background:var(--btn);color:var(--btn-text);border:1px solid var(--btn)}
 .btn:hover{filter:brightness(1.05)}
@@ -45,12 +82,56 @@ a{text-decoration:none;color:inherit}
 .btn.ghost{background:#fff;color:var(--text);border:1px solid var(--br)}
 .foot{padding:26px 18px 36px}
 
-.chip{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;
-  background:#EEF2FF;border:1px solid #E0E7FF;color:#3730A3;font-weight:700}
+/* Airline chip */
+.chip{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:999px;
+  background:#EEF2FF;border:1px solid #E0E7FF;color:#3730A3;font-weight:700
+}
 
+/* Results grid */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
 
+/* Optional: perceptual gradient for ultra-smooth gold */
 @supports (color: oklch(0 0 0)){
-  .topbar{background:linear-gradient(in oklab 90deg,
-    oklch(55% 0.2 300) 0%, oklch(72% 0.12 320) 46%, oklch(84% 0.14 95) 100%);}
+  .topbar{
+    background:linear-gradient(in oklab 90deg,
+      oklch(55% 0.2 300) 0%,
+      oklch(72% 0.12 320) 46%,
+      oklch(84% 0.14 95) 100%);
+  }
 }
+
+/* =========================
+   EXTRA: Pill form controls
+   ========================= */
+.field input, .field select {
+  width:100%;
+  padding:12px 16px;
+  border:1px solid var(--br);
+  border-radius:var(--r-pill);
+  background:#fff;
+  outline:none;
+  box-shadow:0 2px 0 rgba(0,0,0,.03) inset;
+}
+.field input:focus, .field select:focus {
+  border-color:#C7B5FF;
+  box-shadow:0 0 0 3px rgba(106,0,255,.12);
+}
+.form-row{display:flex;gap:12px;flex-wrap:wrap}
+.form-row > .field{min-width:220px;flex:1}
+.toggle{
+  display:inline-block;
+  padding:10px 16px;
+  border-radius:var(--r-pill);
+  background:#fff;
+  border:1px solid var(--br);
+  cursor:pointer;
+}
+.toggle[aria-expanded="true"]{
+  background:rgba(255,255,255,.7);
+  border-color:#d8d8d8;
+}
+#advanced{display:none}
+#advanced.open{display:block}
+.lang-switch .pill{padding:8px 12px}
