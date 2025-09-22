@@ -1,16 +1,15 @@
-<!-- /flights/results.html (REPLACE WHOLE FILE) -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Results — PurpleFlights</title>
-  <link rel="stylesheet" href="/css/theme.css"/>
+  <title>Results — PurpleFlights</title><link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
 <header class="topbar">
   <div class="container row spread">
     <a class="brand" href="/">PurpleFlights</a>
     <nav class="row gap">
+      <a class="pill gradient" href="/">Home</a>
       <a class="pill" href="/flights/">Flights</a>
       <a class="pill ghost" href="/#">Group Trips</a>
       <span class="badge">Patent pending</span>
@@ -24,7 +23,7 @@
   <div class="small muted" id="meta" style="margin:8px 0 12px"></div>
   <div id="results" class="grid"></div>
   <div id="moreWrap" style="text-align:center;margin:14px 0;display:none">
-    <button id="moreBtn" class="btn ghost">Show more</button>
+    <button id="moreBtn" class="btn gradient">Show more</button>
   </div>
 </main>
 
@@ -32,7 +31,7 @@
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 
 <script>
-/* --- Airline code → name --- */
+/* Airline code → name map */
 const AIRLINES = {
   "TG":"Thai Airways","FD":"Thai AirAsia","SL":"Thai Lion Air","3K":"Jetstar Asia",
   "JL":"Japan Airlines","NH":"ANA","SQ":"Singapore Airlines","TR":"Scoot",
@@ -44,6 +43,7 @@ const AIRLINES = {
   "KE":"Korean Air","OZ":"Asiana","DL":"Delta","UA":"United","AA":"American Airlines",
   "NZ":"Air New Zealand","HU":"Hainan Airlines","6E":"IndiGo","Z0":"Avianca Costa Rica"
 };
+function logoURL(code){ return `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`; }
 
 const qs = new URLSearchParams(location.search);
 const req = {
@@ -59,7 +59,7 @@ const req = {
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
-// Hotels pill (TP landing with marker)
+// Hotels TP landing (marker=670577)
 (function(){
   const h=document.getElementById('hotels');
   const u=new URL('https://hotels-comparer.com/'); u.searchParams.set('marker','670577');
@@ -70,12 +70,12 @@ document.getElementById('meta').textContent =
 const resEl=document.getElementById('results');
 const moreWrap=document.getElementById('moreWrap');
 const moreBtn=document.getElementById('moreBtn');
-let ALL=[], idx=0, PAGE=12;
+let ALL=[], idx=0, PAGE=12, clicks=0, infScroll=false;
 
 resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
 
 fetch('/api/search',{method:'POST',headers:{'content-type':'application/json'},
-  body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:50})})
+  body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:60})})
 .then(r=>r.json())
 .then(data=>{
   if(data?.error){ resEl.innerHTML=`<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
@@ -87,11 +87,12 @@ fetch('/api/search',{method:'POST',headers:{'content-type':'application/json'},
 })
 .catch(e=>{ resEl.innerHTML=`<div class="card" style="padding:16px">Search failed: ${e.message}</div>`; });
 
-moreBtn?.addEventListener('click',()=>{ renderMore(); toggleMore(); });
+moreBtn?.addEventListener('click',()=>{
+  renderMore(); toggleMore(); clicks++;
+  if(clicks>=3 && !infScroll){ enableInfiniteScroll(); }
+});
 
-function toggleMore(){
-  moreWrap.style.display = idx < ALL.length ? '' : 'none';
-}
+function toggleMore(){ moreWrap.style.display = idx < ALL.length ? '' : 'none'; }
 
 function renderMore(){
   const end = Math.min(idx + PAGE, ALL.length);
@@ -106,28 +107,43 @@ function renderMore(){
       from:dep,to:arr,date:req.date,return:req.ret,
       adults:String(req.adults),currency:cur,redirect:'1'
     });
-    const kiwiHref = '/api/book?p=kiwi&'+base.toString();
-    const aviaHref = '/api/book?p=aviasales&'+base.toString();
+
+    const kiwiHref='/api/book?p=kiwi&'+base.toString();
+    const aviaHref='/api/book?p=aviasales&'+base.toString();
 
     const card=document.createElement('div'); card.className='card';
     card.innerHTML = `
       <div class="row" style="justify-content:space-between">
-        <div class="row">
-          <span class="chip">${code}</span>
-          <div style="margin-left:10px">
+        <div class="row" style="gap:10px">
+          <span class="chip" style="padding:0">
+            <img src="${logoURL(code)}" alt="${code}" onerror="this.onerror=null;this.remove();this.parentNode.textContent='${code}'"
+                 style="width:100%;height:100%;border-radius:999px;object-fit:cover"/>
+          </span>
+          <div>
             <strong>${dep} → ${arr}</strong>
-            <div class="small muted">${name || '—'}</div>
+            <div class="small muted">${name || code}</div>
           </div>
         </div>
       </div>
       <div class="muted small" style="margin:8px 0 14px">Indicative fare</div>
       <div class="row">
         <a class="btn gradient no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
-        <a class="btn ghost no-affiliate" href="${aviaHref}"  target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
+        <a class="btn gradient no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
       </div>`;
     resEl.appendChild(card);
   }
   idx = end;
+}
+
+function enableInfiniteScroll(){
+  infScroll = true;
+  moreWrap.style.display = 'none';
+  window.addEventListener('scroll', onScroll, { passive:true });
+}
+function onScroll(){
+  const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 200;
+  if(nearBottom && idx < ALL.length){ renderMore(); }
+  if(idx >= ALL.length){ window.removeEventListener('scroll', onScroll); }
 }
 </script>
 </body>
