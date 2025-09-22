@@ -1,8 +1,10 @@
+<!-- /flights/results.html (REPLACE WHOLE FILE) -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Results — PurpleFlights</title><link rel="stylesheet" href="/css/theme.css"/>
+  <title>Results — PurpleFlights</title>
+  <link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
 <header class="topbar">
@@ -21,12 +23,28 @@
 <main class="container">
   <div class="small muted" id="meta" style="margin:8px 0 12px"></div>
   <div id="results" class="grid"></div>
+  <div id="moreWrap" style="text-align:center;margin:14px 0;display:none">
+    <button id="moreBtn" class="btn ghost">Show more</button>
+  </div>
 </main>
 
 <footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 
 <script>
+/* --- Airline code → name --- */
+const AIRLINES = {
+  "TG":"Thai Airways","FD":"Thai AirAsia","SL":"Thai Lion Air","3K":"Jetstar Asia",
+  "JL":"Japan Airlines","NH":"ANA","SQ":"Singapore Airlines","TR":"Scoot",
+  "CX":"Cathay Pacific","UO":"HK Express","BR":"EVA Air","CI":"China Airlines",
+  "QF":"Qantas","EK":"Emirates","EY":"Etihad","QR":"Qatar Airways","BA":"British Airways",
+  "AF":"Air France","KL":"KLM","LH":"Lufthansa","LX":"SWISS","OS":"Austrian",
+  "QZ":"Indonesia AirAsia","GA":"Garuda Indonesia","MH":"Malaysia Airlines",
+  "VN":"Vietnam Airlines","VJ":"VietJet Air","AI":"Air India","UK":"Vistara",
+  "KE":"Korean Air","OZ":"Asiana","DL":"Delta","UA":"United","AA":"American Airlines",
+  "NZ":"Air New Zealand","HU":"Hainan Airlines","6E":"IndiGo","Z0":"Avianca Costa Rica"
+};
+
 const qs = new URLSearchParams(location.search);
 const req = {
   from:(qs.get('from')||'').toUpperCase(),
@@ -41,57 +59,76 @@ const req = {
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
-// Hotels pill (TP Hotels landing)
+// Hotels pill (TP landing with marker)
 (function(){
   const h=document.getElementById('hotels');
-  const u=new URL('https://hotels-comparer.com/'); // TP Hotels landing
-  u.searchParams.set('marker','670577');
-  if(req.date) u.searchParams.set('checkIn', req.date);
-  if(req.ret)  u.searchParams.set('checkOut', req.ret);
+  const u=new URL('https://hotels-comparer.com/'); u.searchParams.set('marker','670577');
+  if(req.date) u.searchParams.set('checkIn', req.date); if(req.ret) u.searchParams.set('checkOut', req.ret);
   h.href=u.toString();
 })();
 
 const resEl=document.getElementById('results');
+const moreWrap=document.getElementById('moreWrap');
+const moreBtn=document.getElementById('moreBtn');
+let ALL=[], idx=0, PAGE=12;
+
 resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
 
 fetch('/api/search',{method:'POST',headers:{'content-type':'application/json'},
   body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:50})})
 .then(r=>r.json())
 .then(data=>{
-  if(data?.error){ resEl.innerHTML = `<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
-  const offers=Array.isArray(data?.data)?data.data:[];
-  if(!offers.length){ resEl.innerHTML='<div class="card" style="padding:16px">No results.</div>'; return; }
-
+  if(data?.error){ resEl.innerHTML=`<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
+  ALL = Array.isArray(data?.data) ? data.data : [];
+  if(!ALL.length){ resEl.innerHTML='<div class="card" style="padding:16px">No results.</div>'; return; }
   resEl.innerHTML='';
-  offers.slice(0,50).forEach(o=>{
+  renderMore();
+  toggleMore();
+})
+.catch(e=>{ resEl.innerHTML=`<div class="card" style="padding:16px">Search failed: ${e.message}</div>`; });
+
+moreBtn?.addEventListener('click',()=>{ renderMore(); toggleMore(); });
+
+function toggleMore(){
+  moreWrap.style.display = idx < ALL.length ? '' : 'none';
+}
+
+function renderMore(){
+  const end = Math.min(idx + PAGE, ALL.length);
+  for(let i=idx;i<end;i++){
+    const o=ALL[i];
     const dep=o.origin||req.from, arr=o.destination||req.to;
     const price=o.price, cur=(o.currency||req.currency||'USD').toUpperCase();
-    const carrier=(o.airline||'').toUpperCase()||'–';
+    const code=(o.airline||'').toUpperCase()||'–';
+    const name=AIRLINES[code] || '';
 
     const base = new URLSearchParams({
       from:dep,to:arr,date:req.date,return:req.ret,
       adults:String(req.adults),currency:cur,redirect:'1'
     });
-    // If you later add children/infants to Kiwi only:
-    // base.set('children', String(req.children)); base.set('infants', String(req.infants));
-
-    const kiwiHref='/api/book?p=kiwi&'+base.toString();
-    const aviaHref='/api/book?p=aviasales&'+base.toString();
+    const kiwiHref = '/api/book?p=kiwi&'+base.toString();
+    const aviaHref = '/api/book?p=aviasales&'+base.toString();
 
     const card=document.createElement('div'); card.className='card';
-    card.innerHTML=`
+    card.innerHTML = `
       <div class="row" style="justify-content:space-between">
-        <div class="row"><span class="chip">${carrier}</span><strong style="margin-left:10px">${dep} → ${arr}</strong></div>
+        <div class="row">
+          <span class="chip">${code}</span>
+          <div style="margin-left:10px">
+            <strong>${dep} → ${arr}</strong>
+            <div class="small muted">${name || '—'}</div>
+          </div>
+        </div>
       </div>
       <div class="muted small" style="margin:8px 0 14px">Indicative fare</div>
       <div class="row">
         <a class="btn gradient no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
-        <a class="btn ghost no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
+        <a class="btn ghost no-affiliate" href="${aviaHref}"  target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
       </div>`;
     resEl.appendChild(card);
-  });
-})
-.catch(e=>{ resEl.innerHTML=`<div class="card" style="padding:16px">Search failed: ${e.message}</div>`; });
+  }
+  idx = end;
+}
 </script>
 </body>
 </html>
