@@ -1,5 +1,5 @@
 // functions/api/book.js
-const JH = { "content-type":"application/json; charset=utf-8", "cache-control":"no-store" };
+const JH = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 
 export const onRequestGet = async ({ request, env }) => {
   const u = new URL(request.url);
@@ -30,28 +30,39 @@ export const onRequestGet = async ({ request, env }) => {
     if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID));
     url = "https://www.aviasales.com/search?" + q.toString();
   } else {
-    // Kiwi results URL (deep)
-    const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
-    const kiwiDeep = `https://www.kiwi.com/en/search/results/${seg}?adults=${adults}&cabin=M&currency=${currency}`;
+    // ---- Kiwi deep link (query-style; more tolerant) ----
+    // Docs-compatible params (one-way: only dateFrom/dateTo; return: returnFrom/returnTo)
+    const k = new URL("https://www.kiwi.com/en/search/results");
+    // Trip params
+    k.searchParams.set("from", from);
+    k.searchParams.set("to", to);
+    k.searchParams.set("dateFrom", date);
+    k.searchParams.set("dateTo", date);
+    if (ret) {
+      k.searchParams.set("returnFrom", ret);
+      k.searchParams.set("returnTo", ret);
+    }
+    // Traveler & prefs
+    k.searchParams.set("adults", String(adults));
+    k.searchParams.set("cabinClass", "economy");
+    k.searchParams.set("currency", currency);
 
-    // Prefer TP click wrapper if provided AND valid for this project.
-    // If TP rejects it, the link will still open the click host but show "custom url is not valid".
-    // To avoid that, we only use click wrapper when the env is set AND a plain allowlist fallback isn't requested.
-    if (env.KIWI_TP_CLICK_BASE) {
-      const base = String(env.KIWI_TP_CLICK_BASE).trim();
-      const prefix = base.endsWith("custom_url=") ? base : base + (base.includes("?") ? "" : "?") + "custom_url=";
+    const kiwiDeep = k.toString();
+
+    // Prefer TP click wrapper if provided & allowed; otherwise use plain affilid
+    const clickBase = env.KIWI_TP_CLICK_BASE && String(env.KIWI_TP_CLICK_BASE).trim();
+    if (clickBase) {
+      const prefix = clickBase.endsWith("custom_url=")
+        ? clickBase
+        : clickBase + (clickBase.includes("?") ? "" : "?") + "custom_url=";
       url = prefix + encodeURIComponent(kiwiDeep);
     } else if (env.KIWI_AFFILIATE_ID) {
-      // Fallback: plain Kiwi with affilid (works even if TP click blocks the custom URL)
-      const q = new URLSearchParams();
-      q.set("adults", String(adults));
-      q.set("cabin", "M");
-      q.set("currency", currency);
-      q.set("affilid", String(env.KIWI_AFFILIATE_ID)); // e.g. c111.travelpayouts.com
-      url = `https://www.kiwi.com/en/search/results/${seg}?` + q.toString();
+      // Plain Kiwi with affilid=slug (e.g. c111.travelpayouts.com)
+      const plain = new URL(kiwiDeep);
+      plain.searchParams.set("affilid", String(env.KIWI_AFFILIATE_ID));
+      url = plain.toString();
     } else {
-      // No tracking configured; still deep-link
-      url = kiwiDeep;
+      url = kiwiDeep; // no tracking configured
     }
   }
 
