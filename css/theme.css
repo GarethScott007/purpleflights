@@ -1,0 +1,91 @@
+/* /css/theme.css  (NEW FILE) */
+:root{
+  /* Core palette */
+  --purple:#6A00FF;          /* vivid purple */
+  --orchid:#A855F7;          /* soft midpoint to smooth blend */
+  --gold:#FFD700;            /* true gold (not orange) */
+  --gold-classic:#D4AF37;    /* classic metallic gold (a bit warmer) */
+
+  /* Surfaces & text */
+  --bg:#EFE7FF;              /* lilac background like your screenshot */
+  --card:#FFFFFF;
+  --text:#191A1F;
+  --muted:#6B7280;
+  --br:#E5E7EB;
+
+  /* Buttons */
+  --btn:#1F2937;             /* charcoal */
+  --btn-text:#FFFFFF;
+
+  /* Radii & shadows */
+  --r-pill:999px;
+  --r-card:20px;
+  --shadow:0 12px 24px rgba(0,0,0,.08);
+}
+
+/* Global */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+a{text-decoration:none;color:inherit}
+
+/* Layout helpers */
+.container{max-width:1060px;margin:0 auto;padding:18px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gap{gap:12px}
+.spread{justify-content:space-between}
+.small{font-size:12px}
+.muted{color:var(--muted)}
+
+/* Top bar with purple→gold gradient */
+.topbar{
+  background:
+    linear-gradient(90deg,
+      var(--purple) 0%,
+      var(--orchid) 46%,
+      var(--gold) 100%);
+  /* If you prefer classic gold, swap var(--gold) -> var(--gold-classic) */
+  padding:14px 0;
+  position:sticky; top:0; z-index:10;
+}
+.brand{color:#fff;font-weight:700}
+.pill, .pill:visited{
+  display:inline-block;padding:8px 14px;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);
+  backdrop-filter:saturate(140%) blur(2px)
+}
+.pill:hover{background:rgba(255,255,255,.28)}
+.pill.ghost{background:rgba(255,255,255,.08)}
+.badge{
+  display:inline-block;padding:6px 10px;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);font-size:12px
+}
+
+/* Hero */
+.hero{
+  margin-top:22px;
+  background:var(--card);border:1px solid var(--br);border-radius:var(--r-card);padding:26px;
+  box-shadow:var(--shadow)
+}
+.hero h1{margin:0 0 10px;font-size:38px}
+
+/* Cards & buttons */
+.card{background:var(--card);border:1px solid var(--br);border-radius:var(--r-card);box-shadow:var(--shadow)}
+.btn{
+  display:inline-block;margin-top:8px;padding:10px 16px;border-radius:var(--r-pill);
+  background:var(--btn);color:var(--btn-text);border:1px solid var(--btn)
+}
+.btn:hover{filter:brightness(1.05)}
+.foot{padding:26px 18px 36px}
+
+/* Optional: nicer gradient on high-end browsers (keeps colors “gold”, not orange) */
+@supports (color: oklch(0 0 0)){
+  .topbar{
+    background:
+      linear-gradient(in oklab 90deg,
+        oklch(55% 0.2 300) 0%, /* vivid purple in OKLAB */
+        oklch(72% 0.12 320) 46%,/* orchid mid */
+        oklch(84% 0.14 95) 100%  /* true gold hue ~95° */
+      );
+  }
+}
