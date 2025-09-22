@@ -1,10 +1,14 @@
 /* /public/js/auto-locations.js */
-/* NEW FILE — Autocomplete for airport inputs using /api/locations (EN/TH) */
+/* REPLACE existing file with this version — adds #from and #to selectors */
 
 (function () {
+  // 👇 This is the only important change: now includes '#from' and '#to'
   const SELS = [
-    '#origin', 'input[name="origin"]', 'input[name="from"]', 'input[placeholder*="From" i]',
-    '#destination', 'input[name="destination"]', 'input[name="to"]', 'input[placeholder*="To" i]'
+    '#from', '#to',                 // your IDs on /flights/index.html
+    '#origin', '#destination',
+    'input[name="origin"]', 'input[name="destination"]',
+    'input[name="from"]', 'input[name="to"]',
+    'input[placeholder*="From" i]', 'input[placeholder*="To" i]'
   ];
 
   const LANG = () => (window.i18n ? window.i18n.getLang() : (localStorage.getItem('lang') || 'en'));
@@ -40,7 +44,7 @@
       list.innerHTML = '';
       currentItems = items;
       if (!items.length) { clearList(); return; }
-      items.forEach((it, i) => {
+      items.forEach((it) => {
         const row = create('button', 'plf-ac-item');
         row.type = 'button';
         row.innerHTML = `
