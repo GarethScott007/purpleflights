@@ -18,7 +18,6 @@ export const onRequestGet = async ({ request, env }) => {
   }
 
   let url = "";
-
   if (p === "aviasales") {
     const q = new URLSearchParams();
     q.set("origin_iata", from);
@@ -29,13 +28,12 @@ export const onRequestGet = async ({ request, env }) => {
     if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID));
     url = "https://www.aviasales.com/search?" + q.toString();
   } else {
-    // Kiwi native deep link (path form) + affilid. This format is stable.
     const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
     const q = new URLSearchParams();
     q.set("adults", String(adults));
     q.set("cabin", "M");
     q.set("currency", currency);
-    if (env.KIWI_AFFILIATE_ID) q.set("affilid", String(env.KIWI_AFFILIATE_ID)); // e.g., c111.travelpayouts.com
+    if (env.KIWI_AFFILIATE_ID) q.set("affilid", String(env.KIWI_AFFILIATE_ID)); // e.g. c111.travelpayouts.com
     url = `https://www.kiwi.com/en/search/results/${seg}?` + q.toString();
   }
 
@@ -43,5 +41,5 @@ export const onRequestGet = async ({ request, env }) => {
   return json({ ok:true, url });
 };
 
-function clamp(v, min, max, def) { const n = parseInt(v || "", 10); return Number.isNaN(n) ? def : Math.max(min, Math.min(max, n)); }
-function json(obj, code = 200) { return new Response(JSON.stringify(obj), { status: code, headers: JH }); }
+function clamp(v,min,max,def){ const n=parseInt(v||"",10); if(Number.isNaN(n)) return def; return Math.max(min,Math.min(max,n)); }
+function json(obj,code=200){ return new Response(JSON.stringify(obj),{ status:code, headers:JH }); }
