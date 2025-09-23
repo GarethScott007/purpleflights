@@ -1,7 +1,11 @@
 // /js/results.js
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
 
-document.getElementById('y')?.textContent = new Date().getFullYear();
+// set footer year (no inline script)
+{
+  const y = document.getElementById('y');
+  if (y) y.textContent = new Date().getFullYear();
+}
 
 const lang = getLang(); applyI18n(lang);
 document.getElementById('lang-en')?.addEventListener('click',()=>setLang('en'));
@@ -43,7 +47,7 @@ document.getElementById('meta').textContent =
   h.href=u.toString();
 })();
 
-// Copy link button
+// Copy link pill
 document.getElementById('copyLink')?.addEventListener('click',(e)=>{
   e.preventDefault();
   const url = `${location.origin}/flights/results.html?${qs.toString()}`;
