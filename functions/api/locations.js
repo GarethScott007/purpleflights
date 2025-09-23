@@ -1,23 +1,57 @@
-// functions/api/locations.js
-const JH = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
+/* /functions/api/locations.js */
+/* REPLACE the entire file with this version */
 
 export const onRequestGet = async ({ request }) => {
+  // Minimal, stable shape many autocomplete widgets expect.
+  // results: [{ code, iata, value, label, title, city, name, country }]
+  const DATA = [
+    { code: "BKK", city: "Bangkok",      name: "Suvarnabhumi",  country: "TH" },
+    { code: "DMK", city: "Bangkok",      name: "Don Mueang",    country: "TH" },
+    { code: "HKT", city: "Phuket",       name: "Phuket",        country: "TH" },
+    { code: "CNX", city: "Chiang Mai",   name: "Chiang Mai",    country: "TH" },
+    { code: "HDY", city: "Hat Yai",      name: "Hat Yai",       country: "TH" },
+    { code: "UTH", city: "Udon Thani",   name: "Udon Thani",    country: "TH" },
+    { code: "URT", city: "Surat Thani",  name: "Surat Thani",   country: "TH" },
+    { code: "USM", city: "Ko Samui",     name: "Samui",         country: "TH" },
+    { code: "KBV", city: "Krabi",        name: "Krabi",         country: "TH" },
+    { code: "UTP", city: "Pattaya",      name: "U-Tapao",       country: "TH" },
+    { code: "SIN", city: "Singapore",    name: "Changi",        country: "SG" },
+    { code: "KUL", city: "Kuala Lumpur", name: "Kuala Lumpur",  country: "MY" },
+    { code: "HKG", city: "Hong Kong",    name: "Hong Kong",     country: "HK" },
+  ];
+
   const url = new URL(request.url);
-  const q = (url.searchParams.get('q') || '').trim();
-  if (!q) return new Response(JSON.stringify([]), { headers: JH });
+  const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+  const limitRaw = parseInt(url.searchParams.get("limit") || "20", 10);
+  const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 20, 1), 50);
 
-  const api = `https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(q)}&locale=en&types[]=city&types[]=airport&types[]=country`;
-  const r = await fetch(api, { cf: { cacheTtl: 300, cacheEverything: true } });
-  if (!r.ok) return new Response(JSON.stringify([]), { headers: JH });
+  let results = DATA;
+  if (q) {
+    results = results.filter((r) =>
+      r.code.toLowerCase().includes(q) ||
+      r.city.toLowerCase().includes(q) ||
+      r.name.toLowerCase().includes(q)
+    );
+  }
 
-  const list = await r.json();
-  const data = (Array.isArray(list) ? list : []).map(x => ({
-    code: x.code || x.iata_code || x.iata || '',
-    name: x.name || x.city_name || x.city || x.country_name || '',
-    country: x.country_name || x.country || '',
-    type: x.type || '',
-    city_code: x.city_code || (x.type === 'city' ? (x.code || '') : ''),
-  })).filter(x => x.code && x.name);
+  const shaped = results.slice(0, limit).map((r) => {
+    const label = `${r.city} — ${r.name} (${r.code})`;
+    return {
+      code: r.code,
+      iata: r.code,     // alias used by some widgets
+      value: r.code,    // alias used by some widgets
+      label,            // display text
+      title: label,     // alias used by some widgets
+      city: r.city,
+      name: r.name,
+      country: r.country,
+    };
+  });
 
-  return new Response(JSON.stringify(data.slice(0, 20)), { headers: JH });
+  return new Response(JSON.stringify({ count: shaped.length, results: shaped }), {
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=600",
+    },
+  });
 };
