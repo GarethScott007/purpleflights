@@ -27,13 +27,30 @@
 
 <main class="container">
   <div class="small muted" id="meta" style="margin:8px 0 12px"></div>
+
+  <!-- Price disclaimer -->
+  <div class="small muted" style="margin:0 0 10px">
+    Prices are indicative. Final price shown by partner.
+  </div>
+
   <div id="results" class="grid"></div>
   <div id="moreWrap" style="text-align:center;margin:14px 0;display:none">
     <button id="moreBtn" class="btn gradient" data-i18n="show_more">Show more</button>
   </div>
 </main>
 
-<footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
+<footer class="container foot small">
+  <nav class="row gap small" style="margin-bottom:8px">
+    <a href="/legal/terms.html">Terms</a>
+    <a href="/legal/privacy.html">Privacy</a>
+    <a href="/legal/cookies.html">Cookies</a>
+    <a href="/legal/disclosure.html">Affiliate Disclosure</a>
+    <a href="/legal/accessibility.html">Accessibility</a>
+  </nav>
+  © <span id="y"></span> PurpleFlights
+</footer>
+
+<script src="/js/cookie-consent.js" defer></script>
 <script type="module" src="/js/results.js?v=3"></script>
 </body>
 </html>
