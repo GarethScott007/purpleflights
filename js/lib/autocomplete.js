@@ -25,11 +25,13 @@ function makeMenu(input) {
 async function query(term) {
   const key = term.toLowerCase();
   if (cache.has(key)) return cache.get(key);
-  const r = await fetch('/api/locations?q=' + encodeURIComponent(term) + '&v=2', { cache: 'no-store' });
+  // cache-buster + no-store to avoid stale responses
+  const r = await fetch('/api/locations?q=' + encodeURIComponent(term) + '&v=3', { cache: 'no-store' });
   const j = await r.json();
   cache.set(key, j);
   return j;
 }
+
 function rank(q, item) {
   const t = (item.name + ' ' + (item.country || '') + ' ' + item.code).toLowerCase();
   const s = t.indexOf(q.toLowerCase());
@@ -75,7 +77,7 @@ export function attachAutocomplete(input) {
       const it = items[i];
       input.value = `${it.name} (${it.code})`;
       input.dataset.code = it.code;                 // airport OR city
-      input.dataset.city = it.city_code || it.code; // prefer city code
+      input.dataset.city = it.city_code || it.code; // prefer city code for searching
       menu.hidden = true;
     }
   });
