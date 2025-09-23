@@ -20,7 +20,9 @@ const I18N = {
     infants: "Infants",
     currency: "Currency",
     advanced: "Advanced",
-    search: "Search"
+    search: "Search",
+    results: "Results",
+    show_more: "Show more",
   },
   th: {
     brand: "เพอร์เพิลไฟลท์",
@@ -42,7 +44,9 @@ const I18N = {
     infants: "ทารก",
     currency: "สกุลเงิน",
     advanced: "ตัวเลือกเพิ่มเติม",
-    search: "ค้นหา"
+    search: "ค้นหา",
+    results: "ผลลัพธ์",
+    show_more: "แสดงเพิ่มเติม",
   }
 };
 
@@ -59,6 +63,7 @@ function t(key, lang) {
   return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
 }
 function applyI18n(lang) {
+  document.documentElement.lang = lang;
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     el.textContent = t(key, lang);
@@ -67,7 +72,9 @@ function applyI18n(lang) {
     const key = el.getAttribute("data-i18n-ph");
     el.setAttribute("placeholder", t(key, lang));
   });
-  // update brand title too
-  document.title = `${t("nav_flights", lang)} — ${t("brand", lang)}`;
+  // Try to keep page titles sensible
+  const ttl = document.querySelector("[data-i18n-title]");
+  if (ttl) document.title = `${t(ttl.getAttribute("data-i18n-title"), lang)} — ${t("brand", lang)}`;
 }
+
 export { getLang, setLang, applyI18n, t };
