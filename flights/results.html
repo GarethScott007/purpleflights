@@ -42,17 +42,15 @@ const lang = getLang(); applyI18n(lang);
 document.getElementById('lang-en').addEventListener('click',()=>setLang('en'));
 document.getElementById('lang-th').addEventListener('click',()=>setLang('th'));
 
-/* Airline code → name map */
 const AIRLINES = {
   "TG":"Thai Airways","FD":"Thai AirAsia","SL":"Thai Lion Air","3K":"Jetstar Asia",
   "JL":"Japan Airlines","NH":"ANA","SQ":"Singapore Airlines","TR":"Scoot",
   "CX":"Cathay Pacific","UO":"HK Express","BR":"EVA Air","CI":"China Airlines",
   "QF":"Qantas","EK":"Emirates","EY":"Etihad","QR":"Qatar Airways","BA":"British Airways",
   "AF":"Air France","KL":"KLM","LH":"Lufthansa","LX":"SWISS","OS":"Austrian",
-  "QZ":"Indonesia AirAsia","GA":"Garuda Indonesia","MH":"Malaysia Airlines",
   "VN":"Vietnam Airlines","VJ":"VietJet Air","AI":"Air India","UK":"Vistara",
   "KE":"Korean Air","OZ":"Asiana","DL":"Delta","UA":"United","AA":"American Airlines",
-  "NZ":"Air New Zealand","HU":"Hainan Airlines","6E":"IndiGo","Z0":"Avianca Costa Rica"
+  "NZ":"Air New Zealand"
 };
 const logoURL = code => `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`;
 
@@ -63,72 +61,93 @@ const req = {
   date:qs.get('date')||'',
   ret:qs.get('ret')||'',
   adults:+(qs.get('adults')||1),
-  children:+(qs.get('children')||0),
-  infants:+(qs.get('infants')||0),
   currency:(qs.get('currency')||'USD').toUpperCase(),
 };
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
-// Hotels TP landing (marker=670577)
+// Hotels pill
 (function(){
   const h=document.getElementById('hotels');
-  const u=new URL('https://hotels-comparer.com/');
-  u.searchParams.set('marker','670577');
-  if(req.date) u.searchParams.set('checkIn', req.date);
-  if(req.ret)  u.searchParams.set('checkOut', req.ret);
+  const u=new URL('https://hotels-comparer.com/'); u.searchParams.set('marker','670577');
+  if(req.date) u.searchParams.set('checkIn', req.date); if(req.ret) u.searchParams.set('checkOut', req.ret);
   h.href=u.toString();
 })();
 
-const resEl=document.getElementById('results');
-const moreWrap=document.getElementById('moreWrap');
-const moreBtn=document.getElementById('moreBtn');
-let ALL=[], idx=0, PAGE=12, clicks=0, infScroll=false;
+const resEl = document.getElementById('results');
+const moreWrap = document.getElementById('moreWrap');
+const moreBtn  = document.getElementById('moreBtn');
 
-resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
+let ALL = [];      // full list from API
+let idx = 0;       // how many rendered
+let PAGE = 12;     // render chunk size
+let clicks = 0;    // how many times user clicked Show more
+let infScroll = false;
 
-fetch('/api/search',{method:'POST',headers:{'content-type':'application/json'},
-  body:JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:60})})
+resEl.innerHTML = '<div class="card" style="padding:16px">Searching…</div>';
+
+fetch('/api/search',{
+  method:'POST',
+  headers:{'content-type':'application/json'},
+  body: JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:60})
+})
 .then(r=>r.json())
 .then(data=>{
-  if(data?.error){ resEl.innerHTML=`<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
+  if (data?.error) {
+    resEl.innerHTML = `<div class="card" style="padding:16px">Search error: ${data.error}</div>`;
+    return;
+  }
   ALL = Array.isArray(data?.data) ? data.data : [];
-  if(!ALL.length){ resEl.innerHTML='<div class="card" style="padding:16px">No results.</div>'; return; }
-  resEl.innerHTML='';
-  renderMore();
-  toggleMore();
+  if (!ALL.length) {
+    resEl.innerHTML = '<div class="card" style="padding:16px">No results.</div>';
+    return;
+  }
+  resEl.innerHTML = '';
+  idx = 0; clicks = 0; infScroll = false;
+  renderMore();        // draw first 12
+  toggleMore();        // show the button if there's more
 })
-.catch(e=>{ resEl.innerHTML=`<div class="card" style="padding:16px">Search failed: ${e.message}</div>`; });
-
-moreBtn?.addEventListener('click',()=>{
-  renderMore(); toggleMore(); clicks++;
-  if(clicks>=3 && !infScroll){ enableInfiniteScroll(); }
+.catch(e=>{
+  resEl.innerHTML = `<div class="card" style="padding:16px">Search failed: ${e.message}</div>`;
 });
 
-function toggleMore(){ moreWrap.style.display = idx < ALL.length ? '' : 'none'; }
+moreBtn?.addEventListener('click',()=>{
+  renderMore();
+  toggleMore();
+  clicks++;
+  if (clicks >= 3 && !infScroll) enableInfiniteScroll();
+});
+
+function toggleMore(){
+  // Show the button if there are still items left (and we haven't turned on infinite scroll yet)
+  moreWrap.style.display = (idx < ALL.length && !infScroll) ? '' : 'none';
+}
 
 function renderMore(){
   const end = Math.min(idx + PAGE, ALL.length);
-  for(let i=idx;i<end;i++){
-    const o=ALL[i];
-    const dep=o.origin||req.from, arr=o.destination||req.to;
-    const price=o.price, cur=(o.currency||req.currency||'USD').toUpperCase();
-    const code=(o.airline||'').toUpperCase()||'–';
-    const name=AIRLINES[code] || '';
+  for (let i = idx; i < end; i++) {
+    const o = ALL[i];
+    const dep = o.origin || req.from;
+    const arr = o.destination || req.to;
+    const price = o.price;
+    const cur = (o.currency || req.currency || 'USD').toUpperCase();
+    const code = (o.airline || '').toUpperCase() || '–';
+    const name = AIRLINES[code] || '';
 
     const base = new URLSearchParams({
-      from:dep,to:arr,date:req.date,return:req.ret,
-      adults:String(req.adults),currency:cur,redirect:'1'
+      from: dep, to: arr, date: req.date, return: req.ret,
+      adults: String(req.adults), currency: cur, redirect: '1'
     });
-    const kiwiHref = '/api/book?p=kiwi&'+base.toString();
-    const aviaHref = '/api/book?p=aviasales&'+base.toString();
+    const kiwiHref = '/api/book?p=kiwi&' + base.toString();
+    const aviaHref = '/api/book?p=aviasales&' + base.toString();
 
-    const card=document.createElement('div'); card.className='card';
+    const card = document.createElement('div'); card.className='card';
     card.innerHTML = `
       <div class="row" style="justify-content:space-between">
         <div class="row" style="gap:10px">
           <span class="chip" style="padding:0">
-            <img src="${logoURL(code)}" alt="${code}" onerror="this.onerror=null;this.remove();this.parentNode.textContent='${code}'"
+            <img src="${logoURL(code)}" alt="${code}"
+                 onerror="this.onerror=null;this.remove();this.parentNode.textContent='${code}'"
                  style="width:100%;height:100%;border-radius:999px;object-fit:cover"/>
           </span>
           <div>
@@ -154,9 +173,7 @@ function enableInfiniteScroll(){
 }
 function onScroll(){
   const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 200;
-  if(nearBottom && idx < ALL.length){ renderMore(); }
-  if(idx >= ALL.length){ window.removeEventListener('scroll', onScroll); }
+  if (nearBottom && idx < ALL.length) renderMore();
+  if (idx >= ALL.length) window.removeEventListener('scroll', onScroll);
 }
 </script>
-</body>
-</html>
