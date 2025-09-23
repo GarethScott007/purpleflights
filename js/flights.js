@@ -2,7 +2,11 @@
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
 import { attachAutocomplete } from '/js/lib/autocomplete.js';
 
-document.getElementById('y')?.textContent = new Date().getFullYear();
+// set footer year (no inline script)
+{
+  const y = document.getElementById('y');
+  if (y) y.textContent = new Date().getFullYear();
+}
 
 const lang = getLang(); applyI18n(lang);
 document.getElementById('lang-en')?.addEventListener('click',()=>setLang('en'));
@@ -18,8 +22,12 @@ attachAutocomplete(toEl);
 const curSel = document.getElementById('currency');
 (function(){
   const l=(navigator.language||'en-US').toLowerCase();
-  const guess = l.startsWith('th')?'THB' : l.endsWith('-gb')?'GBP' : l.endsWith('-au')?'AUD'
-    : l.endsWith('-ca')?'CAD' : l.endsWith('-sg')?'SGD' : (/-de|-fr|-es|-it|-nl|-pt|-ie|-be|-fi|-at/.test(l)?'EUR':'USD');
+  const guess = l.startsWith('th')?'THB'
+    : l.endsWith('-gb')?'GBP'
+    : l.endsWith('-au')?'AUD'
+    : l.endsWith('-ca')?'CAD'
+    : l.endsWith('-sg')?'SGD'
+    : (/-de|-fr|-es|-it|-nl|-pt|-ie|-be|-fi|-at/.test(l)?'EUR':'USD');
   if ([...curSel.options].some(o=>o.value===guess)) curSel.value=guess;
 })();
 
