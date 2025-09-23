@@ -1,24 +1,50 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Accessibility — PurpleFlights</title>
   <link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
-<header class="topbar"><div class="container"><a class="brand" href="/">PurpleFlights</a></div></header>
+<header class="topbar">
+  <div class="container row spread">
+    <a class="brand" href="/">PurpleFlights</a>
+    <nav class="row gap">
+      <a class="pill gradient" href="/">Home</a>
+      <a class="pill gradient" href="/flights/">Flights</a>
+      <a class="pill gradient" href="/legal/privacy.html">Privacy</a>
+      <a class="pill gradient" href="/legal/terms.html">Terms</a>
+    </nav>
+  </div>
+</header>
+
 <main class="container">
   <section class="card" style="padding:24px">
     <h1>Accessibility</h1>
-    <p>We aim to conform to WCAG 2.1 AA. If you experience issues, email <a href="mailto:[YOUR EMAIL]">[YOUR EMAIL]</a> with the page URL and a description and we’ll help.</p>
+    <p>We aim to conform to WCAG 2.1 AA. If you experience accessibility barriers on this site, please contact us and we will do our best to help.</p>
+    <p>Contact: <a href="mailto:gaza0007@gmail.com">gaza0007@gmail.com</a> — operator: <strong>Gareth Bruce Leonard Scott</strong>, 84 Daventry Road, Romford, RM3 7RB, United Kingdom.</p>
     <ul>
-      <li>High-contrast text and keyboard focus states.</li>
-      <li>Semantic navigation and labels for form controls.</li>
+      <li>Headings, labels and form inputs are semantically structured.</li>
+      <li>Colour contrast and focus states are designed to be perceivable.</li>
+      <li>Content is accessible with keyboard and screen readers.</li>
     </ul>
-    <p class="small muted">Last updated: [DATE]</p>
+    <p class="small muted">Last updated: 22 September 2025</p>
   </section>
 </main>
-<footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
-<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+
+<footer class="container foot small">
+  <nav class="row gap small" style="margin-bottom:8px">
+    <a href="/legal/terms.html">Terms</a>
+    <a href="/legal/privacy.html">Privacy</a>
+    <a href="/legal/cookies.html">Cookies</a>
+    <a href="/legal/disclosure.html">Affiliate Disclosure</a>
+    <a href="/legal/accessibility.html">Accessibility</a>
+  </nav>
+  © <span id="y"></span> PurpleFlights
+</footer>
+
+<script src="/js/cookie-consent.js" defer></script>
+<script type="module" src="/js/year.js"></script>
 </body>
 </html>
