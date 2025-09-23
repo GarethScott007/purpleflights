@@ -30,7 +30,6 @@ async function query(term) {
   cache.set(key, j);
   return j;
 }
-
 function rank(q, item) {
   const t = (item.name + ' ' + (item.country || '') + ' ' + item.code).toLowerCase();
   const s = t.indexOf(q.toLowerCase());
@@ -40,8 +39,7 @@ function rank(q, item) {
 export function attachAutocomplete(input) {
   input.setAttribute('autocomplete', 'off');
   const menu = makeMenu(input);
-  let items = [];
-  let idx = -1;
+  let items = []; let idx = -1;
 
   input.addEventListener('input', async () => {
     const q = input.value.trim();
@@ -51,13 +49,7 @@ export function attachAutocomplete(input) {
 
     const list = await query(q);
     items = (Array.isArray(list) ? list : [])
-      .map(x => ({
-        name: x.name,
-        code: x.code,
-        type: x.type || '',
-        city_code: x.city_code || '',
-        country: x.country || ''
-      }))
+      .map(x => ({ name: x.name, code: x.code, type: x.type || '', city_code: x.city_code || '', country: x.country || '' }))
       .filter(x => x.code && x.name)
       .sort((a, b) => rank(q, a) - rank(q, b))
       .slice(0, 12);
@@ -78,41 +70,22 @@ export function attachAutocomplete(input) {
     idx = -1;
     menu.hidden = items.length === 0;
 
-    function highlight(i) {
-      [...menu.children].forEach((c, k) => c.style.background = k === i ? '#f3f4ff' : '#fff');
-      idx = i;
-    }
-    function select(i) {
+    function highlight(i){ [...menu.children].forEach((c,k)=>c.style.background=k===i?'#f3f4ff':'#fff'); idx=i; }
+    function select(i){
       const it = items[i];
       input.value = `${it.name} (${it.code})`;
       input.dataset.code = it.code;                 // airport OR city
-      input.dataset.city = it.city_code || it.code; // prefer city code (LON/NYC/PAR)
+      input.dataset.city = it.city_code || it.code; // prefer city code
       menu.hidden = true;
     }
   });
 
   input.addEventListener('keydown', (e) => {
     if (menu.hidden) return;
-    if (e.key === 'ArrowDown') {
-      idx = Math.min(idx + 1, items.length - 1);
-      [...menu.children].forEach((c, k) => c.style.background = k === idx ? '#f3f4ff' : '#fff');
-      e.preventDefault();
-    } else if (e.key === 'ArrowUp') {
-      idx = Math.max(idx - 1, 0);
-      [...menu.children].forEach((c, k) => c.style.background = k === idx ? '#f3f4ff' : '#fff');
-      e.preventDefault();
-    } else if (e.key === 'Enter') {
-      if (idx >= 0) {
-        const it = items[idx];
-        input.value = `${it.name} (${it.code})`;
-        input.dataset.code = it.code;
-        input.dataset.city = it.city_code || it.code;
-        menu.hidden = true;
-        e.preventDefault();
-      }
-    } else if (e.key === 'Escape') {
-      menu.hidden = true;
-    }
+    if (e.key === 'ArrowDown') { idx = Math.min(idx + 1, items.length - 1); [...menu.children].forEach((c,k)=>c.style.background=k===idx?'#f3f4ff':'#fff'); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { idx = Math.max(idx - 1, 0); [...menu.children].forEach((c,k)=>c.style.background=k===idx?'#f3f4ff':'#fff'); e.preventDefault(); }
+    else if (e.key === 'Enter')  { if (idx >= 0) { const it = items[idx]; input.value = `${it.name} (${it.code})`; input.dataset.code = it.code; input.dataset.city = it.city_code || it.code; menu.hidden = true; e.preventDefault(); } }
+    else if (e.key === 'Escape') { menu.hidden = true; }
   });
 
   document.addEventListener('click', (e) => {
