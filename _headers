@@ -1,8 +1,16 @@
-/*
+/*                           # default for all pages
   Cache-Control: no-store
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=()
+  # CSP: allow only what we use today
+  Content-Security-Policy: default-src 'self';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: https://images.kiwi.com;
+    connect-src 'self' https://autocomplete.travelpayouts.com;
+    frame-ancestors 'none';
+    base-uri 'self'
 
 /flights/index.html
   Cache-Control: no-store
