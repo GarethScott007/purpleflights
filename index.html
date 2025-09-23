@@ -1,4 +1,3 @@
-<!-- /index.html  (REPLACE WHOLE FILE) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,30 +5,49 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>PurpleFlights</title>
   <link rel="stylesheet" href="/css/theme.css"/>
-  <link rel="icon" href="/favicon.ico"/>
 </head>
 <body>
-  <header class="topbar">
-    <div class="container row spread">
-      <a class="brand" href="/">PurpleFlights</a>
-      <nav class="row gap">
-        <a class="pill" href="/flights/">Flights</a>
-        <a class="pill ghost" href="/#">Group Trips</a>
-        <span class="badge">Patent pending</span>
-        <a class="pill ghost" href="/#">Contact</a>
-      </nav>
-    </div>
-  </header>
+<header class="topbar">
+  <div class="container row spread">
+    <a class="brand" href="/">PurpleFlights</a>
+    <nav class="row gap">
+      <a class="pill gradient" href="/">Home</a>
+      <a class="pill gradient" href="/flights/">Flights</a>
+      <a class="pill gradient" href="/#groups">Group Trips</a>
+      <span class="badge">Patent pending</span>
+      <a class="pill gradient" href="/#contact">Contact</a>
+      <a class="pill gradient" href="/hotels/">Hotels</a>
+      <span class="lang-switch row gap" style="margin-left:8px">
+        <a class="pill flag"><img class="flag-img" src="/img/flags/gb.svg" alt="EN"/> EN</a>
+        <a class="pill flag"><img class="flag-img" src="/img/flags/th.svg" alt="TH"/> TH</a>
+      </span>
+    </nav>
+  </div>
+</header>
 
-  <main class="container">
-    <section class="hero card">
-      <h1>Find flights the easy way</h1>
-      <p class="muted">Fast search. Clean results. Booking handled by trusted partners.</p>
-      <a class="btn" href="/flights/">Search flights</a>
-    </section>
-  </main>
+<main class="container">
+  <section class="hero card">
+    <h1>Find flights the easy way</h1>
+    <p class="muted">Fast search. Clean results. Booking handled by trusted partners.</p>
+    <a class="btn gradient" href="/flights/">Search flights</a>
+  </section>
+</main>
 
-  <footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
-  <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<footer class="container foot small">
+  <nav class="row gap small" style="margin-bottom:8px">
+    <a href="/legal/terms.html">Terms</a>
+    <a href="/legal/privacy.html">Privacy</a>
+    <a href="/legal/cookies.html">Cookies</a>
+    <a href="/legal/disclosure.html">Affiliate Disclosure</a>
+    <a href="/legal/accessibility.html">Accessibility</a>
+  </nav>
+  © <span id="y"></span> PurpleFlights
+</footer>
+
+<script src="/js/cookie-consent.js" defer></script>
+<script type="module">
+  // year only; allowed by CSP because it's a module block — if you prefer, move to /js/home.js
+  const y=document.getElementById('y'); if(y) y.textContent=new Date().getFullYear();
+</script>
 </body>
 </html>
