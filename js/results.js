@@ -1,6 +1,8 @@
 // /js/results.js
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
 
+document.getElementById('y')?.textContent = new Date().getFullYear();
+
 const lang = getLang(); applyI18n(lang);
 document.getElementById('lang-en')?.addEventListener('click',()=>setLang('en'));
 document.getElementById('lang-th')?.addEventListener('click',()=>setLang('th'));
