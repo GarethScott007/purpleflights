@@ -12,11 +12,12 @@ export const onRequestGet = async ({ request }) => {
 
   const list = await r.json();
   const data = (Array.isArray(list) ? list : []).map(x => ({
-    code: x.code || x.iata_code || x.iata || '',      // city or airport code
+    code: x.code || x.iata_code || x.iata || '',
     name: x.name || x.city_name || x.city || x.country_name || '',
     country: x.country_name || x.country || '',
-    type: x.type || '',                                // 'city' | 'airport' | 'country'
-    city_code: x.city_code || (x.type === 'city' ? (x.code || '') : ''), // city IATA if known
+    type: x.type || '',
+    city_code: x.city_code || (x.type === 'city' ? (x.code || '') : ''),
   })).filter(x => x.code && x.name);
+
   return new Response(JSON.stringify(data.slice(0, 20)), { headers: JH });
 };
