@@ -3,9 +3,9 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=()
-  # CSP: allow only what we use today
+  # CSP: no inline scripts; allow our style tags; allow Kiwi logos & TP autocomplete
   Content-Security-Policy: default-src 'self';
-    script-src 'self' 'unsafe-inline';
+    script-src 'self';
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: https://images.kiwi.com;
     connect-src 'self' https://autocomplete.travelpayouts.com;
