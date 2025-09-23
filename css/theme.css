@@ -33,9 +33,10 @@ a{text-decoration:none;color:inherit}
 }
 .brand{color:#fff;font-weight:700}
 
-/* Pills in header */
+/* Pills (header buttons) */
 .pill,.pill:visited{
-  display:inline-block; padding:10px 16px; border-radius:var(--r-pill);
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 16px; border-radius:var(--r-pill);
   background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.30);
   backdrop-filter:saturate(140%) blur(2px)
 }
@@ -48,6 +49,10 @@ a{text-decoration:none;color:inherit}
 }
 .badge{display:inline-block;padding:8px 12px;border-radius:var(--r-pill);
   background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);font-size:12px}
+
+/* Flag pills */
+.pill.flag{background:#fff;color:#1f2937;border:1px solid var(--br)}
+.pill.flag .emoji{font-size:14px;line-height:1}
 
 /* Hero */
 .hero{
@@ -64,6 +69,16 @@ a{text-decoration:none;color:inherit}
   box-shadow:0 8px 18px rgba(106,0,255,.25), 0 4px 10px rgba(212,175,55,.25)}
 .btn.gradient:hover{filter:brightness(1.06)}
 .btn.ghost{background:#fff;color:var(--text);border:1px solid var(--br)}
+/* New partner gradients */
+.btn.grad-kiwi{
+  background:linear-gradient(135deg,#16a34a 0%, var(--gold) 100%); /* green→gold */
+  border:none;color:#fff; box-shadow:0 8px 18px rgba(22,163,74,.25), 0 4px 10px rgba(212,175,55,.25)
+}
+.btn.grad-avia{
+  background:linear-gradient(135deg,#2563eb 0%, var(--gold) 100%); /* blue→gold */
+  border:none;color:#fff; box-shadow:0 8px 18px rgba(37,99,235,.25), 0 4px 10px rgba(212,175,55,.25)
+}
+
 .foot{padding:26px 18px 36px}
 
 /* Airline chip */
