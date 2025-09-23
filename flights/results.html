@@ -2,19 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Results — PurpleFlights</title><link rel="stylesheet" href="/css/theme.css"/>
+  <title data-i18n-title="results">Results — PurpleFlights</title>
+  <link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
 <header class="topbar">
   <div class="container row spread">
-    <a class="brand" href="/">PurpleFlights</a>
+    <a class="brand" href="/" data-i18n="brand">PurpleFlights</a>
     <nav class="row gap">
-      <a class="pill gradient" href="/">Home</a>
-      <a class="pill" href="/flights/">Flights</a>
-      <a class="pill ghost" href="/#">Group Trips</a>
+      <a class="pill gradient" href="/" data-i18n="nav_home">Home</a>
+      <a class="pill" href="/flights/" data-i18n="nav_flights">Flights</a>
+      <a class="pill ghost" href="/#groups" data-i18n="nav_groups">Group Trips</a>
       <span class="badge">Patent pending</span>
-      <a class="pill ghost" href="/#">Contact</a>
-      <a id="hotels" class="pill gradient" target="_blank" rel="noopener">Hotels</a>
+      <a class="pill ghost" href="/#contact" data-i18n="nav_contact">Contact</a>
+      <a id="hotels" class="pill gradient" target="_blank" rel="noopener" data-i18n="nav_hotels">Hotels</a>
+      <span class="lang-switch row gap" style="margin-left:8px">
+        <a id="lang-en" class="pill solid">EN</a>
+        <a id="lang-th" class="pill solid">TH</a>
+      </span>
     </nav>
   </div>
 </header>
@@ -23,14 +28,21 @@
   <div class="small muted" id="meta" style="margin:8px 0 12px"></div>
   <div id="results" class="grid"></div>
   <div id="moreWrap" style="text-align:center;margin:14px 0;display:none">
-    <button id="moreBtn" class="btn gradient">Show more</button>
+    <button id="moreBtn" class="btn gradient" data-i18n="show_more">Show more</button>
   </div>
 </main>
 
 <footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 
-<script>
+<script type="module">
+import { getLang, setLang, applyI18n } from '/js/i18n.js';
+
+const lang = getLang(); applyI18n(lang);
+document.getElementById('lang-en').addEventListener('click',()=>setLang('en'));
+document.getElementById('lang-th').addEventListener('click',()=>setLang('th'));
+
+/* Airline code → name map */
 const AIRLINES = {
   "TG":"Thai Airways","FD":"Thai AirAsia","SL":"Thai Lion Air","3K":"Jetstar Asia",
   "JL":"Japan Airlines","NH":"ANA","SQ":"Singapore Airlines","TR":"Scoot",
@@ -42,7 +54,7 @@ const AIRLINES = {
   "KE":"Korean Air","OZ":"Asiana","DL":"Delta","UA":"United","AA":"American Airlines",
   "NZ":"Air New Zealand","HU":"Hainan Airlines","6E":"IndiGo","Z0":"Avianca Costa Rica"
 };
-function logoURL(code){ return `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`; }
+const logoURL = code => `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`;
 
 const qs = new URLSearchParams(location.search);
 const req = {
@@ -58,10 +70,13 @@ const req = {
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
+// Hotels TP landing (marker=670577)
 (function(){
   const h=document.getElementById('hotels');
-  const u=new URL('https://hotels-comparer.com/'); u.searchParams.set('marker','670577');
-  if(req.date) u.searchParams.set('checkIn', req.date); if(req.ret) u.searchParams.set('checkOut', req.ret);
+  const u=new URL('https://hotels-comparer.com/');
+  u.searchParams.set('marker','670577');
+  if(req.date) u.searchParams.set('checkIn', req.date);
+  if(req.ret)  u.searchParams.set('checkOut', req.ret);
   h.href=u.toString();
 })();
 
