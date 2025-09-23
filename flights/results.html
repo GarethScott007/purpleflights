@@ -31,7 +31,6 @@
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 
 <script>
-/* Airline code → name map */
 const AIRLINES = {
   "TG":"Thai Airways","FD":"Thai AirAsia","SL":"Thai Lion Air","3K":"Jetstar Asia",
   "JL":"Japan Airlines","NH":"ANA","SQ":"Singapore Airlines","TR":"Scoot",
@@ -59,7 +58,6 @@ const req = {
 document.getElementById('meta').textContent =
   `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
-// Hotels TP landing (marker=670577)
 (function(){
   const h=document.getElementById('hotels');
   const u=new URL('https://hotels-comparer.com/'); u.searchParams.set('marker','670577');
@@ -107,9 +105,8 @@ function renderMore(){
       from:dep,to:arr,date:req.date,return:req.ret,
       adults:String(req.adults),currency:cur,redirect:'1'
     });
-
-    const kiwiHref='/api/book?p=kiwi&'+base.toString();
-    const aviaHref='/api/book?p=aviasales&'+base.toString();
+    const kiwiHref = '/api/book?p=kiwi&'+base.toString();
+    const aviaHref = '/api/book?p=aviasales&'+base.toString();
 
     const card=document.createElement('div'); card.className='card';
     card.innerHTML = `
