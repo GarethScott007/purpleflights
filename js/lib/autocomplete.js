@@ -25,7 +25,7 @@ function makeMenu(input) {
 async function query(term) {
   const key = term.toLowerCase();
   if (cache.has(key)) return cache.get(key);
-  const r = await fetch('/api/locations?q=' + encodeURIComponent(term));
+  const r = await fetch('/api/locations?q=' + encodeURIComponent(term) + '&v=2', { cache: 'no-store' });
   const j = await r.json();
   cache.set(key, j);
   return j;
