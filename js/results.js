@@ -1,11 +1,8 @@
 // /js/results.js
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
 
-// set footer year (no inline script)
-{
-  const y = document.getElementById('y');
-  if (y) y.textContent = new Date().getFullYear();
-}
+// footer year
+{ const y=document.getElementById('y'); if(y) y.textContent=new Date().getFullYear(); }
 
 const lang = getLang(); applyI18n(lang);
 document.getElementById('lang-en')?.addEventListener('click',()=>setLang('en'));
@@ -120,8 +117,8 @@ function renderMore(){
       </div>
       <div class="muted small" style="margin:8px 0 14px">Indicative fare</div>
       <div class="row">
-        <a class="btn gradient no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
-        <a class="btn gradient no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
+        <a class="btn grad-kiwi no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
+        <a class="btn grad-avia no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
       </div>`;
     resEl.appendChild(card);
   }
