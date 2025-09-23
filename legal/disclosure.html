@@ -1,20 +1,46 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Affiliate Disclosure — PurpleFlights</title>
   <link rel="stylesheet" href="/css/theme.css"/>
 </head>
 <body>
-<header class="topbar"><div class="container"><a class="brand" href="/">PurpleFlights</a></div></header>
+<header class="topbar">
+  <div class="container row spread">
+    <a class="brand" href="/">PurpleFlights</a>
+    <nav class="row gap">
+      <a class="pill gradient" href="/">Home</a>
+      <a class="pill gradient" href="/flights/">Flights</a>
+      <a class="pill gradient" href="/legal/privacy.html">Privacy</a>
+      <a class="pill gradient" href="/legal/terms.html">Terms</a>
+    </nav>
+  </div>
+</header>
+
 <main class="container">
   <section class="card" style="padding:24px">
     <h1>Affiliate Disclosure</h1>
-    <p>We may earn a commission if you purchase through our links. This doesn’t change the price you pay and helps keep the service free. We present results objectively and do not let compensation affect ranking.</p>
-    <p class="small muted">Last updated: [DATE]</p>
+    <p>PurpleFlights contains affiliate links. If you click a link and make a purchase, we may earn a commission from our partners such as Aviasales or Kiwi. This is at <strong>no extra cost</strong> to you and helps keep the service free.</p>
+    <p>We present results objectively and do not let compensation affect ranking. Final prices and terms are shown on the partner’s website.</p>
+    <p>Operated by <strong>Gareth Bruce Leonard Scott</strong> (sole trader), 84 Daventry Road, Romford, RM3 7RB, United Kingdom. Contact: <a href="mailto:gaza0007@gmail.com">gaza0007@gmail.com</a>.</p>
+    <p class="small muted">Last updated: 22 September 2025</p>
   </section>
 </main>
-<footer class="container foot small">© <span id="y"></span> PurpleFlights</footer>
-<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+
+<footer class="container foot small">
+  <nav class="row gap small" style="margin-bottom:8px">
+    <a href="/legal/terms.html">Terms</a>
+    <a href="/legal/privacy.html">Privacy</a>
+    <a href="/legal/cookies.html">Cookies</a>
+    <a href="/legal/disclosure.html">Affiliate Disclosure</a>
+    <a href="/legal/accessibility.html">Accessibility</a>
+  </nav>
+  © <span id="y"></span> PurpleFlights
+</footer>
+
+<script src="/js/cookie-consent.js" defer></script>
+<script type="module" src="/js/year.js"></script>
 </body>
 </html>
