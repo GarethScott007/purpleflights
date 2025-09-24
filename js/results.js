@@ -1,5 +1,7 @@
 // /js/results.js
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
+
+// footer year
 { const y=document.getElementById('y'); if(y) y.textContent=new Date().getFullYear(); }
 
 const lang = getLang(); applyI18n(lang);
@@ -20,17 +22,17 @@ const logoURL = code => `https://images.kiwi.com/airlines/64/${encodeURIComponen
 
 /* Slug map for Kiwi – cities + airports */
 const KIWI_SLUGS = {
-  "LON": "london-united-kingdom",   "BKK": "bangkok-thailand",
-  "HKT": "phuket-thailand",         "CNX": "chiang-mai-thailand",
-  "SIN": "singapore-singapore",     "KUL": "kuala-lumpur-malaysia",
-  "HKG": "hong-kong-hong-kong",
-  "LHR": "heathrow-london-united-kingdom", "LGW": "gatwick-london-united-kingdom",
-  "LTN": "luton-london-united-kingdom",    "STN": "stansted-london-united-kingdom",
-  "BKK_AIRPORT": "suvarnabhumi-bangkok-thailand",
-  "DMK": "don-mueang-bangkok-thailand"
+  // cities
+  "LON":"london-united-kingdom","BKK":"bangkok-thailand","HKT":"phuket-thailand",
+  "CNX":"chiang-mai-thailand","SIN":"singapore-singapore","KUL":"kuala-lumpur-malaysia",
+  "HKG":"hong-kong-hong-kong",
+  // airports
+  "LHR":"heathrow-london-united-kingdom","LGW":"gatwick-london-united-kingdom",
+  "LTN":"luton-london-united-kingdom","STN":"stansted-london-united-kingdom",
+  "BKK_AIRPORT":"suvarnabhumi-bangkok-thailand","DMK":"don-mueang-bangkok-thailand"
 };
-function citySlug(code){ return KIWI_SLUGS[code]||""; }
-function airportSlug(code){ return KIWI_SLUGS[`${code}_AIRPORT`]||KIWI_SLUGS[code]||""; }
+const citySlug     = code => KIWI_SLUGS[code] || "";
+const airportSlug  = code => KIWI_SLUGS[`${code}_AIRPORT`] || KIWI_SLUGS[code] || "";
 
 const qs = new URLSearchParams(location.search);
 const req = {
@@ -39,15 +41,20 @@ const req = {
   date:qs.get('date')||'',
   ret:qs.get('ret')||'',
   adults:+(qs.get('adults')||1),
+  children:+(qs.get('children')||0),
+  infants:+(qs.get('infants')||0),
   currency:(qs.get('currency')||'USD').toUpperCase(),
 };
-document.getElementById('meta').textContent = `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
+document.getElementById('meta').textContent =
+  `${req.from} → ${req.to} • ${req.date}${req.ret?(' → '+req.ret):''}`;
 
 // Hotels pill
 (function(){
   const h=document.getElementById('hotels');
-  const u=new URL('https://hotels-comparer.com/'); u.searchParams.set('marker','670577');
-  if(req.date) u.searchParams.set('checkIn', req.date); if(req.ret) u.searchParams.set('checkOut', req.ret);
+  const u=new URL('https://hotels-comparer.com/');
+  u.searchParams.set('marker','670577');
+  if(req.date) u.searchParams.set('checkIn', req.date);
+  if(req.ret)  u.searchParams.set('checkOut', req.ret);
   h.href=u.toString();
 })();
 
@@ -69,7 +76,7 @@ let ALL=[], idx=0, PAGE=12, clicks=0, infScroll=false;
 
 resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
 
-/* Robust fetch */
+/* Robust fetch: ensure JSON; show real error text if upstream misbehaves */
 fetch('/api/search',{
   method:'POST',
   headers:{'content-type':'application/json'},
@@ -86,15 +93,14 @@ fetch('/api/search',{
   if (data?.error) { resEl.innerHTML = `<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
   ALL = Array.isArray(data?.data) ? data.data : [];
   if (!ALL.length) {
-    // Helpful alternatives when backend is sparse
     const tip = document.createElement('div');
     tip.className='card'; tip.style.padding='16px';
     const flex = flexUrl(req.from, req.to, req.date, req.ret, req.adults, req.currency);
     tip.innerHTML = `
       <div style="margin-bottom:8px">No results for the exact dates. Try:</div>
       <div class="row" style="gap:8px;flex-wrap:wrap">
-        <a class="pill gradient" href="${flex}" target="_blank" rel="noopener">Open Kiwi (±3 days)</a>
-        <a class="pill gradient" href="/api/book?p=aviasales&from=${req.from}&to=${req.to}&date=${req.date}&return=${req.ret}&adults=${req.adults}&currency=${req.currency}&redirect=1">Open Aviasales</a>
+        <a class="pill gradient" href="${flex}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open Kiwi (±3 days)</a>
+        <a class="pill gradient" href="/api/book?p=aviasales&from=${req.from}&to=${req.to}&date=${req.date}&return=${req.ret}&adults=${req.adults}&currency=${req.currency}&redirect=1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open Aviasales</a>
       </div>`;
     resEl.replaceChildren(tip);
     return;
@@ -102,26 +108,29 @@ fetch('/api/search',{
   resEl.innerHTML=''; idx=0; clicks=0; infScroll=false;
   renderMore(); toggleMore();
 })
-.catch(e=>{ resEl.innerHTML = `<div class="card" style="padding:16px">Search failed: ${String(e?.message||e)}</div>`; });
+.catch(e=>{
+  resEl.innerHTML = `<div class="card" style="padding:16px">Search failed: ${String(e?.message||e)}</div>`;
+});
 
-/* Build two Kiwi links: city-slug and iata path; prefer slug when available */
+/* Prefer slug path (forces results list); fall back to IATA path */
 function kiwiUrl(dep, arr, date, ret, adults, currency){
   const depCity = citySlug(dep), arrCity = citySlug(arr);
   let url;
   if (depCity && arrCity) {
     url = new URL(`https://www.kiwi.com/en/search/results/${depCity}/${arrCity}/${date}${ret?`/${ret}`:''}`);
   } else {
-    // Attempt airport slugs (LHR/BKK_AIRPORT etc.)
     const depAir = airportSlug(dep) || dep;
     const arrAir = airportSlug(arr) || arr;
     url = new URL(`https://www.kiwi.com/en/search/results/${depAir}/${arrAir}/${date}${ret?`/${ret}`:''}`);
   }
   url.searchParams.set("adults", String(adults));
-  url.searchParams.set("cabin", "M");
+  url.searchParams.set("cabin", "M");         // economy
   url.searchParams.set("currency", currency);
   url.searchParams.set("sortBy", "price");
   url.searchParams.set("limit", "60");
   url.searchParams.set("affilid", "c111.travelpayouts.com");
+  // NEW: cache-buster to defeat SPA/session caching
+  url.searchParams.set("_", String(Date.now()));
   return url.toString();
 }
 
@@ -129,11 +138,10 @@ function kiwiUrl(dep, arr, date, ret, adults, currency){
 function flexUrl(dep, arr, date, ret, adults, currency){
   const base = kiwiUrl(dep, arr, date, ret, adults, currency);
   const u = new URL(base);
-  // Query style supports +/- flex
   u.searchParams.set('dateFrom', date);
   u.searchParams.set('dateTo',   date);
   if (ret) { u.searchParams.set('returnFrom', ret); u.searchParams.set('returnTo', ret); }
-  u.searchParams.set('flexDays', '3'); // Kiwi accepts flexDays in many contexts
+  u.searchParams.set('flexDays', '3');
   return u.toString();
 }
 
@@ -169,15 +177,29 @@ function renderMore(){
       </div>
       <div class="muted small" style="margin:8px 0 14px">Indicative fare</div>
       <div class="row" style="gap:8px;flex-wrap:wrap">
-        <a class="btn grad-kiwi no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
-        <a class="btn grad-avia no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
-        <a class="pill gradient no-affiliate" href="${flexUrl(dep, arr, req.date, req.ret, req.adults, cur)}" target="_blank" rel="noopener">Kiwi (±3d)</a>
+        <a class="btn grad-kiwi no-affiliate"
+           href="${kiwiHref}"
+           target="_blank"
+           rel="noopener noreferrer"
+           referrerpolicy="no-referrer">Book (Kiwi) — ${price} ${cur}</a>
+
+        <a class="btn grad-avia no-affiliate"
+           href="${aviaHref}"
+           target="_blank"
+           rel="noopener noreferrer"
+           referrerpolicy="no-referrer">Book (Aviasales) — ${price} ${cur}</a>
+
+        <a class="pill gradient no-affiliate"
+           href="${flexUrl(dep, arr, req.date, req.ret, req.adults, cur)}"
+           target="_blank"
+           rel="noopener noreferrer"
+           referrerpolicy="no-referrer">Kiwi (±3d)</a>
       </div>`;
 
     if (qs.get('debug') === '1') {
       const dbg=document.createElement('div'); dbg.className='small muted'; dbg.style.marginTop='8px'; dbg.style.wordBreak='break-all';
-      dbg.innerHTML = `<div>Kiwi: <a href="${kiwiHref}" target="_blank" rel="noopener">${kiwiHref}</a></div>
-                       <div>Avia: <a href="${aviaHref}" target="_blank" rel="noopener">${aviaHref}</a></div>`;
+      dbg.innerHTML = `<div>Kiwi: <a href="${kiwiHref}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${kiwiHref}</a></div>
+                       <div>Avia: <a href="${aviaHref}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${aviaHref}</a></div>`;
       card.appendChild(dbg);
     }
     resEl.appendChild(card);
