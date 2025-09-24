@@ -16,20 +16,44 @@ export const onRequestPost = async ({ request, env }) => {
     const token = env.TP_TOKEN;
     if (!token) return ok({ data: [], error: 'Missing TP_TOKEN env var' });
 
-    const depMonth = date.slice(0, 7), retMonth = ret.slice(0, 7);
+    const depMonth = date.slice(0,7);
+    const hasReturn = !!ret;
+    const retMonth = ret ? ret.slice(0,7) : '';
 
-    // Try round-trip month, then calendar, then one-way month
+    // detect long gaps for round-trip (TP limit ~30 days)
+    let longGap = false;
+    if (hasReturn) {
+      const d0 = new Date(date + 'T00:00:00Z');
+      const d1 = new Date(ret  + 'T00:00:00Z');
+      const diffDays = Math.floor((d1 - d0)/(1000*60*60*24));
+      longGap = Number.isFinite(diffDays) && diffDays > 30;
+    }
+
     const tries = [];
-    if (retMonth) tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: retMonth, currency: cur, limit: max }));
-    tries.push(() => pricesForCalendar({ token, origin: from3, destination: to3, month: depMonth, currency: cur, limit: max }));
-    tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: '', currency: cur, limit: max }));
+
+    if (hasReturn && !longGap) {
+      // normal sequence (round-trip allowed)
+      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: retMonth, currency: cur, limit: max })); // RT
+      tries.push(() => pricesForCalendar({ token, origin: from3, destination: to3, month: depMonth, currency: cur, limit: max })); // calendar as fallback
+      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: '', currency: cur, limit: max })); // OW fallback
+    } else {
+      // long gap or no return: do one-way (calendar + dates) for the departure month
+      tries.push(() => pricesForCalendar({ token, origin: from3, destination: to3, month: depMonth, currency: cur, limit: max }));
+      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: '', currency: cur, limit: max }));
+    }
 
     for (const fn of tries) {
       const r = await fn();
-      if (r.error) return ok({ data: [], error: r.error });
-      if (r.data?.length) return ok({ data: r.data });
+      if (r.error) {
+        // If upstream says "bad request ... diff ... 30", keep going; else surface the error
+        if (!/diff .*? 30/i.test(r.error)) return ok({ data: [], error: r.error });
+        // else continue to next try
+      } else if (r.data?.length) {
+        return ok({ data: r.data, note: longGap ? 'Long trip detected (>30 days). Showing one-way prices for departure month.' : undefined });
+      }
     }
-    return ok({ data: [] });
+
+    return ok({ data: [], note: longGap ? 'Long trip detected (>30 days). No prices returned for departure month.' : undefined });
   } catch (e) {
     return ok({ data: [], error: `server exception: ${String(e && e.message || e)}` });
   }
@@ -67,11 +91,13 @@ async function safeFetchMap(url, cur) {
     const r = await fetch(url.toString(), { headers: { accept: 'application/json' }, cf: { cacheTtl: 300, cacheEverything: true } });
     const ct = r.headers.get('content-type') || '';
     const raw = await r.text();
+
     if (!r.ok) {
-      return { data: [], error: `upstream ${r.status} ${r.statusText} — ${raw.slice(0, 160).replace(/\s+/g, ' ')}` };
+      // surface body text to the UI
+      return { data: [], error: `upstream ${r.status} ${r.statusText} — ${raw.slice(0, 200).replace(/\s+/g,' ')}` };
     }
     if (!ct.includes('application/json')) {
-      return { data: [], error: `upstream non-JSON (${r.status}) — ${raw.slice(0, 160).replace(/\s+/g, ' ')}` };
+      return { data: [], error: `upstream non-JSON (${r.status}) — ${raw.slice(0, 200).replace(/\s+/g,' ')}` };
     }
     let j;
     try { j = JSON.parse(raw); }
