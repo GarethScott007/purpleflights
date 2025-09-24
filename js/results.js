@@ -16,7 +16,7 @@ const AIRLINES = {
   "AF":"Air France","KL":"KLM","LH":"Lufthansa","LX":"SWISS","OS":"Austrian",
   "VN":"Vietnam Airlines","VJ":"VietJet Air","AI":"Air India","UK":"Vistara",
   "KE":"Korean Air","OZ":"Asiana","DL":"Delta","UA":"United","AA":"American Airlines",
-  "NZ":"Air New Zealand"
+  "NZ":"Air New Zealand","HU":"Hainan Airlines","CZ":"China Southern","CA":"Air China","ZH":"Shenzhen Airlines","PC":"Pegasus"
 };
 const logoURL = code => `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`;
 
@@ -62,29 +62,38 @@ let ALL=[], idx=0, PAGE=12, clicks=0, infScroll=false;
 
 resEl.innerHTML='<div class="card" style="padding:16px">Searching…</div>';
 
+/* Robust fetch: ensure JSON; show real error text if upstream misbehaves */
 fetch('/api/search',{
   method:'POST',
   headers:{'content-type':'application/json'},
   body: JSON.stringify({from:req.from,to:req.to,date:req.date,ret:req.ret,currency:req.currency,max:60})
 })
-.then(r=>r.json())
+.then(async (r)=>{
+  const ct = r.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await r.text();
+    throw new Error(`HTTP ${r.status} non-JSON: ${text.slice(0,140)}`);
+  }
+  return r.json();
+})
 .then(data=>{
-  if(data?.error){ resEl.innerHTML=`<div class="card" style="padding:16px">Search error: ${data.error}</div>`; return; }
+  if (data?.error) {
+    resEl.innerHTML = `<div class="card" style="padding:16px">Search error: ${data.error}</div>`;
+    return;
+  }
   ALL = Array.isArray(data?.data) ? data.data : [];
-  if(!ALL.length){ resEl.innerHTML='<div class="card" style="padding:16px">No results.</div>'; return; }
+  if (!ALL.length) {
+    resEl.innerHTML = '<div class="card" style="padding:16px">No results.</div>';
+    return;
+  }
   resEl.innerHTML=''; idx=0; clicks=0; infScroll=false;
   renderMore(); toggleMore();
 })
-.catch(e=>{ resEl.innerHTML=`<div class="card" style="padding:16px">Search failed: ${e.message}</div>`; });
-
-moreBtn?.addEventListener('click',()=>{
-  renderMore(); toggleMore(); clicks++;
-  if(clicks>=3 && !infScroll) enableInfiniteScroll();
+.catch(e=>{
+  resEl.innerHTML = `<div class="card" style="padding:16px">Search failed: ${String(e?.message||e)}</div>`;
 });
 
-function toggleMore(){ moreWrap.style.display = (idx < ALL.length && !infScroll) ? '' : 'none'; }
-
-/* Build Kiwi path-style results deep link (green→gold button) */
+/* Build Kiwi path-style results deep link (more likely to land on results list) */
 function kiwiResultsURL(dep, arr, date, ret, adults, currency){
   const k = new URL(`https://www.kiwi.com/en/search/results/${dep}-${arr}/${date}${ret?`/${ret}`:''}`);
   k.searchParams.set("adults", String(adults));
@@ -92,9 +101,15 @@ function kiwiResultsURL(dep, arr, date, ret, adults, currency){
   k.searchParams.set("currency", currency);
   k.searchParams.set("sortBy", "price");
   k.searchParams.set("limit", "60");
-  k.searchParams.set("affilid", "c111.travelpayouts.com"); // your slug
+  k.searchParams.set("affilid", "c111.travelpayouts.com");
   return k.toString();
 }
+
+moreBtn?.addEventListener('click',()=>{
+  renderMore(); toggleMore(); clicks++;
+  if(clicks>=3 && !infScroll) enableInfiniteScroll();
+});
+function toggleMore(){ moreWrap.style.display = (idx < ALL.length && !infScroll) ? '' : 'none'; }
 
 function renderMore(){
   const end = Math.min(idx + PAGE, ALL.length);
@@ -105,15 +120,15 @@ function renderMore(){
     const code=(o.airline||'').toUpperCase()||'–';
     const name=AIRLINES[code] || '';
 
-    // Build direct Kiwi deep link
+    // Kiwi: direct deep link
     const kiwiHref = kiwiResultsURL(dep, arr, req.date, req.ret, req.adults, cur);
 
-    // Aviasales via /api/book (works well)
+    // Aviasales: via /api/book
     const base = new URLSearchParams({
       from:dep,to:arr,date:req.date,return:req.ret,
       adults:String(req.adults),currency:cur,redirect:'1'
     });
-    const aviaHref = '/api/book?p=aviasales&'+base.toString();
+    const aviaHref='/api/book?p=aviasales&'+base.toString();
 
     const card=document.createElement('div'); card.className='card';
     card.innerHTML = `
@@ -136,17 +151,14 @@ function renderMore(){
         <a class="btn grad-avia no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
       </div>`;
 
-    // Debug: show final URLs if ?debug=1 on the results page
+    // Debug: show final URLs if ?debug=1
     if (qs.get('debug') === '1') {
       const dbg = document.createElement('div');
-      dbg.className = 'small muted';
-      dbg.style.marginTop = '8px';
-      dbg.style.wordBreak = 'break-all';
+      dbg.className='small muted'; dbg.style.marginTop='8px'; dbg.style.wordBreak='break-all';
       dbg.innerHTML = `<div>Kiwi: <a href="${kiwiHref}" target="_blank" rel="noopener">${kiwiHref}</a></div>
                        <div>Avia: <a href="${aviaHref}" target="_blank" rel="noopener">${aviaHref}</a></div>`;
       card.appendChild(dbg);
     }
-
     resEl.appendChild(card);
   }
   idx = end;
