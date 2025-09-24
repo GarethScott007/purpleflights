@@ -1,7 +1,7 @@
 // /js/results.js
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
 
-// footer year
+// footer year (CSP-safe)
 { const y=document.getElementById('y'); if(y) y.textContent=new Date().getFullYear(); }
 
 const lang = getLang(); applyI18n(lang);
@@ -84,6 +84,18 @@ moreBtn?.addEventListener('click',()=>{
 
 function toggleMore(){ moreWrap.style.display = (idx < ALL.length && !infScroll) ? '' : 'none'; }
 
+/* Build Kiwi path-style results deep link (green→gold button) */
+function kiwiResultsURL(dep, arr, date, ret, adults, currency){
+  const k = new URL(`https://www.kiwi.com/en/search/results/${dep}-${arr}/${date}${ret?`/${ret}`:''}`);
+  k.searchParams.set("adults", String(adults));
+  k.searchParams.set("cabin", "M");         // economy
+  k.searchParams.set("currency", currency);
+  k.searchParams.set("sortBy", "price");
+  k.searchParams.set("limit", "60");
+  k.searchParams.set("affilid", "c111.travelpayouts.com"); // your slug
+  return k.toString();
+}
+
 function renderMore(){
   const end = Math.min(idx + PAGE, ALL.length);
   for(let i=idx;i<end;i++){
@@ -93,12 +105,15 @@ function renderMore(){
     const code=(o.airline||'').toUpperCase()||'–';
     const name=AIRLINES[code] || '';
 
+    // Build direct Kiwi deep link
+    const kiwiHref = kiwiResultsURL(dep, arr, req.date, req.ret, req.adults, cur);
+
+    // Aviasales via /api/book (works well)
     const base = new URLSearchParams({
       from:dep,to:arr,date:req.date,return:req.ret,
       adults:String(req.adults),currency:cur,redirect:'1'
     });
-    const kiwiHref='/api/book?p=kiwi&'+base.toString();
-    const aviaHref='/api/book?p=aviasales&'+base.toString();
+    const aviaHref = '/api/book?p=aviasales&'+base.toString();
 
     const card=document.createElement('div'); card.className='card';
     card.innerHTML = `
@@ -120,6 +135,18 @@ function renderMore(){
         <a class="btn grad-kiwi no-affiliate" href="${kiwiHref}" target="_blank" rel="noopener">Book (Kiwi) — ${price} ${cur}</a>
         <a class="btn grad-avia no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
       </div>`;
+
+    // Debug: show final URLs if ?debug=1 on the results page
+    if (qs.get('debug') === '1') {
+      const dbg = document.createElement('div');
+      dbg.className = 'small muted';
+      dbg.style.marginTop = '8px';
+      dbg.style.wordBreak = 'break-all';
+      dbg.innerHTML = `<div>Kiwi: <a href="${kiwiHref}" target="_blank" rel="noopener">${kiwiHref}</a></div>
+                       <div>Avia: <a href="${aviaHref}" target="_blank" rel="noopener">${aviaHref}</a></div>`;
+      card.appendChild(dbg);
+    }
+
     resEl.appendChild(card);
   }
   idx = end;
