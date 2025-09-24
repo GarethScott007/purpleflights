@@ -1,7 +1,7 @@
 // /js/results.js
 import { getLang, setLang, applyI18n } from '/js/i18n.js';
 
-// footer year (CSP-safe)
+// footer year
 { const y=document.getElementById('y'); if(y) y.textContent=new Date().getFullYear(); }
 
 const lang = getLang(); applyI18n(lang);
@@ -19,6 +19,40 @@ const AIRLINES = {
   "NZ":"Air New Zealand","HU":"Hainan Airlines","CZ":"China Southern","CA":"Air China","ZH":"Shenzhen Airlines","PC":"Pegasus"
 };
 const logoURL = code => `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`;
+
+/* Slug map for Kiwi path-style deep links.
+   Add more over time; fallback to IATA if not found. */
+const KIWI_SLUGS = {
+  // Cities
+  "LON": "london-united-kingdom",
+  "BKK": "bangkok-thailand",
+  "HKT": "phuket-thailand",
+  "CNX": "chiang-mai-thailand",
+  "SIN": "singapore-singapore",
+  "KUL": "kuala-lumpur-malaysia",
+  "HKG": "hong-kong-hong-kong",
+
+  // Major airports
+  "LHR": "heathrow-london-united-kingdom",
+  "LGW": "gatwick-london-united-kingdom",
+  "LTN": "luton-london-united-kingdom",
+  "STN": "stansted-london-united-kingdom",
+  "BKK_AIRPORT": "suvarnabhumi-bangkok-thailand",
+  "DMK": "don-mueang-bangkok-thailand",
+  "HKT_AIRPORT": "phuket-thailand",
+  "CNX_AIRPORT": "chiang-mai-thailand",
+  "SIN_AIRPORT": "changi-singapore",
+  "KUL_AIRPORT": "kuala-lumpur-malaysia",
+  "HKG_AIRPORT": "hong-kong-hong-kong"
+};
+
+/* Choose city slug if city code; otherwise airport slug when we know it. */
+function kiwiSlug(iata, isAirport=false){
+  if (!iata) return "";
+  if (!isAirport) return KIWI_SLUGS[iata] || "";       // city code -> city slug
+  // airport path keys use *_AIRPORT
+  return KIWI_SLUGS[`${iata}_AIRPORT`] || KIWI_SLUGS[iata] || "";
+}
 
 const qs = new URLSearchParams(location.search);
 const req = {
@@ -93,16 +127,30 @@ fetch('/api/search',{
   resEl.innerHTML = `<div class="card" style="padding:16px">Search failed: ${String(e?.message||e)}</div>`;
 });
 
-/* Build Kiwi path-style results deep link (more likely to land on results list) */
+/* Prefer slug path (forces results list); fall back to IATA path */
 function kiwiResultsURL(dep, arr, date, ret, adults, currency){
-  const k = new URL(`https://www.kiwi.com/en/search/results/${dep}-${arr}/${date}${ret?`/${ret}`:''}`);
-  k.searchParams.set("adults", String(adults));
-  k.searchParams.set("cabin", "M");         // economy
-  k.searchParams.set("currency", currency);
-  k.searchParams.set("sortBy", "price");
-  k.searchParams.set("limit", "60");
-  k.searchParams.set("affilid", "c111.travelpayouts.com");
-  return k.toString();
+  // If dep/arr are city codes (e.g., LON/BKK), use city slugs.
+  // If they’re airports (e.g., LHR/BKK), use airport slug when we have one; otherwise use city slug fallback.
+  const depIsAirport = /^[A-Z]{3}$/.test(dep) && (dep !== 'LON' && dep !== 'BKK' && dep !== 'SIN' && dep !== 'KUL' && dep !== 'HKG');
+  const arrIsAirport = /^[A-Z]{3}$/.test(arr) && (arr !== 'LON' && arr !== 'BKK' && arr !== 'SIN' && arr !== 'KUL' && arr !== 'HKG');
+
+  const depSlug = kiwiSlug(dep, depIsAirport);
+  const arrSlug = kiwiSlug(arr, arrIsAirport);
+
+  let url;
+  if (depSlug && arrSlug) {
+    url = new URL(`https://www.kiwi.com/en/search/results/${depSlug}/${arrSlug}/${date}${ret?`/${ret}`:''}`);
+  } else {
+    // Fallback to IATA path
+    url = new URL(`https://www.kiwi.com/en/search/results/${dep}-${arr}/${date}${ret?`/${ret}`:''}`);
+  }
+  url.searchParams.set("adults", String(adults));
+  url.searchParams.set("cabin", "M");         // economy
+  url.searchParams.set("currency", currency);
+  url.searchParams.set("sortBy", "price");
+  url.searchParams.set("limit", "60");
+  url.searchParams.set("affilid", "c111.travelpayouts.com");
+  return url.toString();
 }
 
 moreBtn?.addEventListener('click',()=>{
@@ -120,10 +168,9 @@ function renderMore(){
     const code=(o.airline||'').toUpperCase()||'–';
     const name=AIRLINES[code] || '';
 
-    // Kiwi: direct deep link
     const kiwiHref = kiwiResultsURL(dep, arr, req.date, req.ret, req.adults, cur);
 
-    // Aviasales: via /api/book
+    // Aviasales via /api/book
     const base = new URLSearchParams({
       from:dep,to:arr,date:req.date,return:req.ret,
       adults:String(req.adults),currency:cur,redirect:'1'
@@ -151,7 +198,6 @@ function renderMore(){
         <a class="btn grad-avia no-affiliate" href="${aviaHref}" target="_blank" rel="noopener">Book (Aviasales) — ${price} ${cur}</a>
       </div>`;
 
-    // Debug: show final URLs if ?debug=1
     if (qs.get('debug') === '1') {
       const dbg = document.createElement('div');
       dbg.className='small muted'; dbg.style.marginTop='8px'; dbg.style.wordBreak='break-all';
