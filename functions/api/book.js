@@ -3,7 +3,7 @@ const JH = { "content-type":"application/json; charset=utf-8", "cache-control":"
 
 export const onRequestGet = async ({ request, env }) => {
   const u = new URL(request.url);
-  const p = (u.searchParams.get("p") || String(env.BOOK_PROVIDER || "kiwi")).toLowerCase();
+  const provider = (u.searchParams.get("p") || String(env.BOOK_PROVIDER || "kiwi")).toLowerCase();
 
   const from = (u.searchParams.get("from") || "").toUpperCase();
   const to   = (u.searchParams.get("to") || "").toUpperCase();
@@ -18,7 +18,8 @@ export const onRequestGet = async ({ request, env }) => {
   }
 
   let url = "";
-  if (p === "aviasales") {
+
+  if (provider === "aviasales") {
     const q = new URLSearchParams();
     q.set("origin_iata", from);
     q.set("destination_iata", to);
@@ -28,25 +29,22 @@ export const onRequestGet = async ({ request, env }) => {
     if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID));
     url = "https://www.aviasales.com/search?" + q.toString();
   } else {
-    // Kiwi: query-style deep link that goes straight to RESULTS
-    const k = new URL("https://www.kiwi.com/en/search/results");
-    // Trip window – pin to the chosen day
-    k.searchParams.set("from", from);
-    k.searchParams.set("to", to);
-    k.searchParams.set("dateFrom", date);
-    k.searchParams.set("dateTo", date);
-    if (ret) { k.searchParams.set("returnFrom", ret); k.searchParams.set("returnTo", ret); }
+    // --- KIWI: path-style deep link to RESULTS ---
+    // This format typically opens the results list directly and overrides any previous session.
+    const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
+    const k = new URL(`https://www.kiwi.com/en/search/results/${seg}`);
 
-    // Passengers & prefs
     k.searchParams.set("adults", String(adults));
-    k.searchParams.set("cabinClass", "economy");
+    // "cabin" is the param used by the path-style deeplink
+    k.searchParams.set("cabin", "M");             // M = economy
     k.searchParams.set("currency", currency);
-    // Optional hints that often help load results view immediately
+    // Quality-of-life hints
     k.searchParams.set("sortBy", "price");
     k.searchParams.set("limit", "60");
 
-    // Attribution
-    if (env.KIWI_AFFILIATE_ID) k.searchParams.set("affilid", String(env.KIWI_AFFILIATE_ID));
+    if (env.KIWI_AFFILIATE_ID) {
+      k.searchParams.set("affilid", String(env.KIWI_AFFILIATE_ID)); // e.g., c111.travelpayouts.com
+    }
 
     url = k.toString();
   }
