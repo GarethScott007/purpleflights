@@ -28,13 +28,27 @@ export const onRequestGet = async ({ request, env }) => {
     if (env.TP_PARTNER_ID) q.set("marker", String(env.TP_PARTNER_ID));
     url = "https://www.aviasales.com/search?" + q.toString();
   } else {
-    const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
-    const q = new URLSearchParams();
-    q.set("adults", String(adults));
-    q.set("cabin", "M");
-    q.set("currency", currency);
-    if (env.KIWI_AFFILIATE_ID) q.set("affilid", String(env.KIWI_AFFILIATE_ID)); // e.g. c111.travelpayouts.com
-    url = `https://www.kiwi.com/en/search/results/${seg}?` + q.toString();
+    // Kiwi: query-style deep link that goes straight to RESULTS
+    const k = new URL("https://www.kiwi.com/en/search/results");
+    // Trip window – pin to the chosen day
+    k.searchParams.set("from", from);
+    k.searchParams.set("to", to);
+    k.searchParams.set("dateFrom", date);
+    k.searchParams.set("dateTo", date);
+    if (ret) { k.searchParams.set("returnFrom", ret); k.searchParams.set("returnTo", ret); }
+
+    // Passengers & prefs
+    k.searchParams.set("adults", String(adults));
+    k.searchParams.set("cabinClass", "economy");
+    k.searchParams.set("currency", currency);
+    // Optional hints that often help load results view immediately
+    k.searchParams.set("sortBy", "price");
+    k.searchParams.set("limit", "60");
+
+    // Attribution
+    if (env.KIWI_AFFILIATE_ID) k.searchParams.set("affilid", String(env.KIWI_AFFILIATE_ID));
+
+    url = k.toString();
   }
 
   if (redirect) return Response.redirect(url, 302);
