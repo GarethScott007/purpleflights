@@ -1,4 +1,4 @@
-// functions/api/book.js
+// /functions/api/book.js
 const JH = { "content-type":"application/json; charset=utf-8", "cache-control":"no-store" };
 
 export const onRequestGet = async ({ request, env }) => {
@@ -30,20 +30,17 @@ export const onRequestGet = async ({ request, env }) => {
     url = "https://www.aviasales.com/search?" + q.toString();
   } else {
     // --- KIWI: path-style deep link to RESULTS ---
-    // This format typically opens the results list directly and overrides any previous session.
     const seg = `${from}-${to}/${date}${ret ? `/${ret}` : ""}`;
     const k = new URL(`https://www.kiwi.com/en/search/results/${seg}`);
 
     k.searchParams.set("adults", String(adults));
-    // "cabin" is the param used by the path-style deeplink
-    k.searchParams.set("cabin", "M");             // M = economy
+    k.searchParams.set("cabin", "M");
     k.searchParams.set("currency", currency);
-    // Quality-of-life hints
     k.searchParams.set("sortBy", "price");
     k.searchParams.set("limit", "60");
 
     if (env.KIWI_AFFILIATE_ID) {
-      k.searchParams.set("affilid", String(env.KIWI_AFFILIATE_ID)); // e.g., c111.travelpayouts.com
+      k.searchParams.set("affilid", String(env.KIWI_AFFILIATE_ID));
     }
 
     url = k.toString();
