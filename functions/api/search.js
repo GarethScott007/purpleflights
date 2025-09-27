@@ -1,4 +1,4 @@
-// functions/api/search.js
+// /functions/api/search.js
 const JH = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 
 export const onRequestPost = async ({ request, env }) => {
@@ -20,7 +20,6 @@ export const onRequestPost = async ({ request, env }) => {
     const hasReturn = !!ret;
     const retMonth = ret ? ret.slice(0,7) : '';
 
-    // detect long gaps for round-trip (TP limit ~30 days)
     let longGap = false;
     if (hasReturn) {
       const d0 = new Date(date + 'T00:00:00Z');
@@ -32,12 +31,10 @@ export const onRequestPost = async ({ request, env }) => {
     const tries = [];
 
     if (hasReturn && !longGap) {
-      // normal sequence (round-trip allowed)
-      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: retMonth, currency: cur, limit: max })); // RT
-      tries.push(() => pricesForCalendar({ token, origin: from3, destination: to3, month: depMonth, currency: cur, limit: max })); // calendar as fallback
-      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: '', currency: cur, limit: max })); // OW fallback
+      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: retMonth, currency: cur, limit: max }));
+      tries.push(() => pricesForCalendar({ token, origin: from3, destination: to3, month: depMonth, currency: cur, limit: max }));
+      tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: '', currency: cur, limit: max }));
     } else {
-      // long gap or no return: do one-way (calendar + dates) for the departure month
       tries.push(() => pricesForCalendar({ token, origin: from3, destination: to3, month: depMonth, currency: cur, limit: max }));
       tries.push(() => pricesForDates({ token, origin: from3, destination: to3, departure_at: depMonth, return_at: '', currency: cur, limit: max }));
     }
@@ -45,9 +42,7 @@ export const onRequestPost = async ({ request, env }) => {
     for (const fn of tries) {
       const r = await fn();
       if (r.error) {
-        // If upstream says "bad request ... diff ... 30", keep going; else surface the error
         if (!/diff .*? 30/i.test(r.error)) return ok({ data: [], error: r.error });
-        // else continue to next try
       } else if (r.data?.length) {
         return ok({ data: r.data, note: longGap ? 'Long trip detected (>30 days). Showing one-way prices for departure month.' : undefined });
       }
@@ -59,13 +54,12 @@ export const onRequestPost = async ({ request, env }) => {
   }
 };
 
-// ---- helpers ----
 async function pricesForDates({ token, origin, destination, departure_at, return_at, currency, limit }) {
   const u = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_dates');
   u.searchParams.set('origin', origin);
   u.searchParams.set('destination', destination);
-  if (departure_at) u.searchParams.set('departure_at', departure_at);   // YYYY-MM
-  if (return_at)    u.searchParams.set('return_at', return_at);         // YYYY-MM
+  if (departure_at) u.searchParams.set('departure_at', departure_at);
+  if (return_at)    u.searchParams.set('return_at', return_at);
   u.searchParams.set('unique', 'false');
   u.searchParams.set('sorting', 'price');
   u.searchParams.set('limit', String(Math.min(Number(limit) || 30, 50)));
@@ -78,7 +72,7 @@ async function pricesForCalendar({ token, origin, destination, month, currency, 
   const u = new URL('https://api.travelpayouts.com/aviasales/v3/prices_for_calendar');
   u.searchParams.set('origin', origin);
   u.searchParams.set('destination', destination);
-  if (month) u.searchParams.set('month', month);          // YYYY-MM
+  if (month) u.searchParams.set('month', month);
   u.searchParams.set('calendar_type', 'departure_date');
   u.searchParams.set('limit', String(Math.min(Number(limit) || 30, 50)));
   u.searchParams.set('token', token);
@@ -93,7 +87,6 @@ async function safeFetchMap(url, cur) {
     const raw = await r.text();
 
     if (!r.ok) {
-      // surface body text to the UI
       return { data: [], error: `upstream ${r.status} ${r.statusText} — ${raw.slice(0, 200).replace(/\s+/g,' ')}` };
     }
     if (!ct.includes('application/json')) {
